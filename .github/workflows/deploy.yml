@@ -1,0 +1,20 @@
+name: Deploy
+
+on: [push]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        port: ${{ secrets.PORT }}
+        script: |
+          git clone git@github.com:JosephDuffy/webserver-deploy.git
+          docker-compose pull
+          docker-compose -f docker-compose.yml up -d --remove-orphans
