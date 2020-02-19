@@ -15,7 +15,7 @@ jobs:
       with:
         host: ${{ secrets.SSH_HOST }}
         port: ${{ secrets.SSH_PORT }}
-        username: ${{ secrets.SSH_USERNAME }}
+        username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
         script: |
           if [ -d "josephduffy.co.uk" ]; then
