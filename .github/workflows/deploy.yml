@@ -18,15 +18,13 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          bash
-
           if [ -d "josephduffy.co.uk" ]; then
             cd josephduffy.co.uk
             git pull
             cd ..
           else
             git clone --single-branch --branch next-js git@github.com:JosephDuffy/josephduffy.co.uk.git
-          fi
+          end
 
           if [ -d webserver-deploy ]; then
             cd webserver-deploy
@@ -34,7 +32,7 @@ jobs:
           else
             git clone git@github.com:JosephDuffy/webserver-deploy.git
             cd webserver-deploy
-          fi
+          end
 
           echo "$WebsiteEnv" >> .env.website
           echo "$LetsEncryptEnv" >> .env.letsencrypt
