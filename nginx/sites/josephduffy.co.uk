@@ -33,3 +33,36 @@ server {
 		return 301 https://josephduffy.co.uk$request_uri;
 	}
 }
+
+server {
+	server_name stats.josephduffy.co.uk;
+	listen 80;
+	listen [::]:80;
+	listen 443 ssl http2;
+	listen [::]:443 ssl http2;
+
+	ssl_certificate /etc/letsencrypt/live/josephduffy.co.uk/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/josephduffy.co.uk/privkey.pem;
+	ssl_trusted_certificate /etc/letsencrypt/live/josephduffy.co.uk/chain.pem;
+
+	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+
+    access_log off;
+
+    auth_basic "Go Away";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+
+    root /var/www/real-time-stats/;
+    index index.html;
+
+	location / {
+        try_files $uri $uri/ =404;
+	}
+
+    location /ws {
+        proxy_pass http://goaccess:7890;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+    }
+}

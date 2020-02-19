@@ -1,4 +1,4 @@
 letsencrypt/etc/
 nginx/legacy/
 nginx/logs/
-
+goaccess/
