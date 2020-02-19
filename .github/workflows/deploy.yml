@@ -18,6 +18,8 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
         script: |
+          bash
+
           if [ -d "josephduffy.co.uk" ]; then
             cd josephduffy.co.uk
             git pull
@@ -38,7 +40,7 @@ jobs:
           echo "$LetsEncryptEnv" >> .env.letsencrypt
           echo "$HTPASSWD_COTENTS" >> nginx/.htpasswd
 
-          env HTTP_PORT=81 HTTPS_PORT=444 docker-compose --file docker-compose.yml up --detach --remove-orphans
+          HTTP_PORT=81 HTTPS_PORT=444 docker-compose --file docker-compose.yml up --detach --remove-orphans
           docker exec -it nginx nginx -s reload
 
           git checkout -- .env.website
