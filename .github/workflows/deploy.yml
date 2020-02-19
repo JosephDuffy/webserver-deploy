@@ -38,6 +38,7 @@ jobs:
           echo "$LetsEncryptEnv" >> .env.letsencrypt
 
           env HTTP_PORT=81 HTTPS_PORT=444 docker-compose --file docker-compose.yml up --detach --remove-orphans
+          docker exec -it nginx nginx -s reload
 
           rm .env.website
           rm .env.letsencrypt
