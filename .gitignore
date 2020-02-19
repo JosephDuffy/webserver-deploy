@@ -1,0 +1,4 @@
+letsencrypt/
+nginx/legacy/
+nginx/logs/
+

@@ -9,12 +9,35 @@ jobs:
     steps:
     - name: Deploy
       uses: appleboy/ssh-action@master
+      env:
+        WebsiteEnv: ${{ secrets.WebsiteEnv }}
+        LetsEncryptEnv: ${{ secrets.LetsEncryptEnv }}
       with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        password: ${{ secrets.PASSWORD }}
-        port: ${{ secrets.PORT }}
+        host: ${{ secrets.SSH_HOST }}
+        port: ${{ secrets.SSH_PORT }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
-          git clone git@github.com:JosephDuffy/webserver-deploy.git
-          docker-compose pull
+          if [ -d "josephduffy.co.uk" ]; then
+            cd josephduffy.co.uk
+            git pull
+            cd ..
+          else
+            git clone --single-branch --branch next-js git@github.com:JosephDuffy/josephduffy.co.uk.git
+          fi
+
+          if [ -d webserver-deploy ]; then
+            cd webserver-deploy
+            git pull
+          else
+            git clone git@github.com:JosephDuffy/webserver-deploy.git
+            cd webserver-deploy
+          fi
+
+          echo "$WebsiteEnv" >> .env.website
+          echo "$LetsEncryptEnv" >> .env.letsencrypt
+
           docker-compose -f docker-compose.yml up -d --remove-orphans
+
+          rm .env.website
+          rm .env.letsencrypt
