@@ -1,4 +1,4 @@
-letsencrypt/
+letsencrypt/etc/
 nginx/legacy/
 nginx/logs/
 
