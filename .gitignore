@@ -1,4 +1,5 @@
 letsencrypt/etc/
 nginx/legacy/
 nginx/logs/
+nginx/.htpasswd
 goaccess/
