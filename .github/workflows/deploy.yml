@@ -38,7 +38,7 @@ jobs:
           echo "$LetsEncryptEnv" >> .env.letsencrypt
           echo "$HTPASSWD_COTENTS" >> nginx/.htpasswd
 
-          HTTP_PORT=81 HTTPS_PORT=444 docker-compose --file docker-compose.yml up --detach --remove-orphans
+          env HTTP_PORT=81 HTTPS_PORT=444 docker-compose --file docker-compose.yml up --detach --remove-orphans
           docker exec -it nginx nginx -s reload
 
           git checkout -- .env.website
