@@ -37,7 +37,7 @@ jobs:
           echo "$WebsiteEnv" >> .env.website
           echo "$LetsEncryptEnv" >> .env.letsencrypt
 
-          docker-compose -f docker-compose.yml up -d --remove-orphans
+          env HTTP_PORT=81 HTTPS_PORT=444 docker-compose --file docker-compose.yml up --detach --remove-orphans
 
           rm .env.website
           rm .env.letsencrypt
