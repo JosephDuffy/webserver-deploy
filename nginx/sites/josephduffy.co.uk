@@ -19,31 +19,31 @@ server {
 	}
 
 	location /partial-framework-release-1-0-0 {
-		return 301 https://josephduffy.co.uk/posts/partial-framework-release-1-0-0
+		return 301 https://josephduffy.co.uk/posts/partial-framework-release-1-0-0;
 	}
 
 	location /partial-in-swift {
-		return 301 https://josephduffy.co.uk/posts/partial-in-swift
+		return 301 https://josephduffy.co.uk/posts/partial-in-swift;
 	}
 
 	location /gathered-1-3-release-notes {
-		return 301 https://josephduffy.co.uk/posts/gathered-1-3-release-notes
+		return 301 https://josephduffy.co.uk/posts/gathered-1-3-release-notes;
 	}
 
 	location /ios-share-sheets-the-proper-way-locations {
-		return 301 https://josephduffy.co.uk/posts/ios-share-sheets-the-proper-way-locations
+		return 301 https://josephduffy.co.uk/posts/ios-share-sheets-the-proper-way-locations;
 	}
 
 	location /gathered-1-0-1 {
-		return 301 https://josephduffy.co.uk/posts/gathered-1-0-1
+		return 301 https://josephduffy.co.uk/posts/gathered-1-0-1;
 	}
 
 	location /its-a-duffy-thing {
-		return 301 https://josephduffy.co.uk/posts/its-a-duffy-thing
+		return 301 https://josephduffy.co.uk/posts/its-a-duffy-thing;
 	}
 
 	location /touch-id-on-the-lock-screen {
-		return 301 https://josephduffy.co.uk/posts/touch-id-on-the-lock-scree
+		return 301 https://josephduffy.co.uk/posts/touch-id-on-the-lock-screen;
 	}
 
 }
