@@ -18,27 +18,29 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          if test -d "josephduffy.co.uk"
-            cd josephduffy.co.uk
+          #!/bin/bash
+
+          if [[ -d "josephduffy.co.uk" ]]; then
+            cd josephduffy.co.uk || exit
             git pull
             cd ..
           else
             git clone --single-branch --branch next-js https://github.com/JosephDuffy/josephduffy.co.uk.git
-          end
+          fi
 
-          if test -d "webserver-deploy"
-            cd webserver-deploy
+          if [[ -d "webserver-deploy" ]]; then
+            cd webserver-deploy || exit
             git pull
           else
             git clone https://github.com/JosephDuffy/webserver-deploy.git
-            cd webserver-deploy
-          end
+            cd webserver-deploy || exit
+          fi
 
           echo "$WebsiteEnv" >> .env.website
           echo "$LetsEncryptEnv" >> .env.letsencrypt
           echo "$HTPASSWD_COTENTS" >> nginx/.htpasswd
 
-          env HTTP_PORT=81 HTTPS_PORT=444 docker-compose --file docker-compose.yml up --detach --remove-orphans
+          env HTTP_PORT=80 HTTPS_PORT=443 docker-compose --file docker-compose.yml up --detach --remove-orphans
           docker exec -it nginx nginx -s reload
 
           git checkout -- .env.website
