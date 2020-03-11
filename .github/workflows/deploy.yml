@@ -45,4 +45,3 @@ jobs:
 
           git checkout -- .env.website
           git checkout -- .env.letsencrypt
-          git checkout -- nginx/.htpasswd
