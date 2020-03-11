@@ -22,7 +22,7 @@ services:
       - ./nginx/.htpasswd:/etc/nginx/.htpasswd:ro
       - ./nginx/sites/:/etc/nginx/sites:ro
       - ./nginx/logs/:/var/log/nginx/
-      - ../josephduffy.co.uk/nginx-include:/var/log/nginx/include.d/josephduffy.co.uk:ro
+      - ../josephduffy.co.uk/nginx-include:/etc/nginx/include.d/josephduffy.co.uk:ro
       - ./goaccess/real-time/:/var/www/real-time-stats/
       - ./letsencrypt/etc/letsencrypt:/etc/letsencrypt:ro
 
