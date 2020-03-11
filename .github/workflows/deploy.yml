@@ -12,11 +12,16 @@ jobs:
     steps:
     - name: Deploy
       uses: appleboy/ssh-action@master
+      env:
+        HTTP_PORT: 80
+        HTTPS_PORT: 443
+        GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_ACCESS_TOKEN }}
       with:
         host: ${{ secrets.SSH_HOST }}
         port: ${{ secrets.SSH_PORT }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
+        envs: HTTP_PORT,HTTPS_PORT,GITHUB_ACCESS_TOKEN
         script: |
           if [[ -d "josephduffy.co.uk" ]]; then
             cd josephduffy.co.uk || exit
@@ -34,6 +39,6 @@ jobs:
             cd webserver-deploy || exit
           fi
 
-          env HTTP_PORT=80 HTTPS_PORT=443 GITHUB_ACCESS_TOKEN="${{ secrets.GITHUB_ACCESS_TOKEN }}" docker-compose build --no-cache website
-          env HTTP_PORT=80 HTTPS_PORT=443 GITHUB_ACCESS_TOKEN="${{ secrets.GITHUB_ACCESS_TOKEN }}" docker-compose up --detach --build
+          docker-compose build --no-cache website
+          docker-compose up --detach --build
           docker exec -it nginx nginx -s reload
