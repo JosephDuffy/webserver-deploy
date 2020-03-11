@@ -9,10 +9,6 @@ jobs:
     steps:
     - name: Deploy
       uses: appleboy/ssh-action@master
-      env:
-        WebsiteEnv: ${{ secrets.WebsiteEnv }}
-        LetsEncryptEnv: ${{ secrets.LetsEncryptEnv }}
-        HTPASSWD_CONTENTS: ${{ secrets.HTPASSWD_CONTENTS }}
       with:
         host: ${{ secrets.SSH_HOST }}
         port: ${{ secrets.SSH_PORT }}
@@ -31,22 +27,11 @@ jobs:
 
           if [[ -d "webserver-deploy" ]]; then
             cd webserver-deploy || exit
-
-            git checkout -- .env.website
-            git checkout -- .env.letsencrypt
-            git checkout -- nginx/.htpasswd
             git pull
           else
             git clone https://github.com/JosephDuffy/webserver-deploy.git
             cd webserver-deploy || exit
           fi
 
-          echo "$WebsiteEnv" > .env.website
-          echo "$LetsEncryptEnv" > .env.letsencrypt
-          echo "$HTPASSWD_CONTENTS" > nginx/.htpasswd
-
           env HTTP_PORT=80 HTTPS_PORT=443 docker-compose --file docker-compose.yml up --detach --build
           docker exec -it nginx nginx -s reload
-
-          git checkout -- .env.website
-          git checkout -- .env.letsencrypt

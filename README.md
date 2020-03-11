@@ -6,4 +6,8 @@ It pulls https://github.com/josephduffy/josephduffy.co.uk, builds it using the i
 
 Statistics are provided via goaccess.
 
-Deployments are via GitHub actions. The secrets (such as API keys) are inserted by GitHub.
+Deployments are via GitHub actions.
+
+## Environment Variables
+
+To ensure GitHub entries are loaded the environment should provide the `GITHUB_ACCESS_TOKEN` environment variable.

@@ -61,9 +61,9 @@ services:
     build:
         context: ../josephduffy.co.uk
         dockerfile: Dockerfile
+        args:
+          - GITHUB_ACCESS_TOKEN
     restart: unless-stopped
-    env_file:
-      - .env.website
     environment:
       - TZ=Europe/London
       - PUID=1000

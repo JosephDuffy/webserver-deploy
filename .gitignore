@@ -3,3 +3,4 @@ nginx/legacy/
 nginx/logs/
 nginx/.htpasswd
 goaccess/
+.env.letsencrypt
