@@ -31,6 +31,10 @@ jobs:
 
           if [[ -d "webserver-deploy" ]]; then
             cd webserver-deploy || exit
+
+            git checkout -- .env.website
+            git checkout -- .env.letsencrypt
+            git checkout -- nginx/.htpasswd
             git pull
           else
             git clone https://github.com/JosephDuffy/webserver-deploy.git

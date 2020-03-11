@@ -9,37 +9,11 @@ server {
 
 	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
 
-	include /etc/nginx/include.d/josephduffy.co.uk-locations
+	include /etc/nginx/include.d/josephduffy.co.uk-locations;
 }
 
 server {
 	server_name noanalytics.josephduffy.co.uk;
-	listen 443 ssl http2 default_server;
-	listen [::]:443 ssl http2 default_server;
-
-	ssl_certificate /etc/letsencrypt/live/josephduffy.co.uk/fullchain.pem;
-	ssl_certificate_key /etc/letsencrypt/live/josephduffy.co.uk/privkey.pem;
-	ssl_trusted_certificate /etc/letsencrypt/live/josephduffy.co.uk/chain.pem;
-
-	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-
-	access_log off;
-
-	include /etc/nginx/include.d/josephduffy.co.uk-locations
-}
-
-server {
-	server_name josephduffy.co.uk;
-	listen 80;
-	listen [::]:80;
-
-	return 301 https://josephduffy.co.uk$request_uri;
-}
-
-server {
-	server_name www.josephduffy.co.uk;
-	listen 80;
-	listen [::]:80;
 	listen 443 ssl http2;
 	listen [::]:443 ssl http2;
 
@@ -49,7 +23,9 @@ server {
 
 	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
 
-	return 301 https://josephduffy.co.uk$request_uri;
+	access_log off;
+
+	include /etc/nginx/include.d/josephduffy.co.uk-locations;
 }
 
 server {
@@ -84,9 +60,25 @@ server {
 }
 
 server {
-	server_name stats.josephduffy.co.uk;
+	server_name josephduffy.co.uk noanalytics.josephduffy.co.uk stats.josephduffy.co.uk;
 	listen 80;
 	listen [::]:80;
 
-	return 301 https://stats.josephduffy.co.uk$request_uri;
+	return 301 https://$server_name$request_uri;
+}
+
+server {
+	server_name www.josephduffy.co.uk;
+	listen 80;
+	listen [::]:80;
+	listen 443 ssl http2;
+	listen [::]:443 ssl http2;
+
+	ssl_certificate /etc/letsencrypt/live/josephduffy.co.uk/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/josephduffy.co.uk/privkey.pem;
+	ssl_trusted_certificate /etc/letsencrypt/live/josephduffy.co.uk/chain.pem;
+
+	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+
+	return 301 https://josephduffy.co.uk$request_uri;
 }
