@@ -1,5 +1,5 @@
 server {
-	server_name josephduffy.co.uk;
+	server_name new.josephduffy.co.uk josephduffy.co.uk;
 	listen 443 ssl http2 default_server;
 	listen [::]:443 ssl http2 default_server;
 
