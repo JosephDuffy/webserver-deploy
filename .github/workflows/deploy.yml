@@ -12,6 +12,7 @@ jobs:
       env:
         WebsiteEnv: ${{ secrets.WebsiteEnv }}
         LetsEncryptEnv: ${{ secrets.LetsEncryptEnv }}
+        HTPASSWD_CONTENTS: ${{ secrets.HTPASSWD_CONTENTS }}
       with:
         host: ${{ secrets.SSH_HOST }}
         port: ${{ secrets.SSH_PORT }}
