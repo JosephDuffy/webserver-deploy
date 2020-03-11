@@ -46,6 +46,22 @@ server {
 		return 301 https://josephduffy.co.uk/posts/touch-id-on-the-lock-screen;
 	}
 
+	location /rss {
+		return 301 https://josephduffy.co.uk/rss.xml;
+	}
+
+	location /feed {
+		return 301 https://josephduffy.co.uk/rss.xml;
+	}
+
+	location /feeds {
+		return 301 https://josephduffy.co.uk/rss.xml;
+	}
+
+	location /atom {
+		return 301 https://josephduffy.co.uk/atom.xml;
+	}
+
 }
 
 server {
