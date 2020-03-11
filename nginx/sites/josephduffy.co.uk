@@ -9,7 +9,16 @@ server {
 
 	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
 
-	include /etc/nginx/include.d/josephduffy.co.uk-locations;
+	location / {
+		proxy_pass http://website/;
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection 'upgrade';
+		proxy_set_header Host $host;
+		proxy_cache_bypass $http_upgrade;
+	}
+
+	include /etc/nginx/include.d/josephduffy.co.uk;
 }
 
 server {
@@ -25,7 +34,16 @@ server {
 
 	access_log off;
 
-	include /etc/nginx/include.d/josephduffy.co.uk-locations;
+	location / {
+		proxy_pass http://website/;
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection 'upgrade';
+		proxy_set_header Host $host;
+		proxy_cache_bypass $http_upgrade;
+	}
+
+	include /etc/nginx/include.d/josephduffy.co.uk;
 }
 
 server {
