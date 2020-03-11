@@ -37,6 +37,6 @@ jobs:
             cd webserver-deploy || exit
           fi
 
-          docker-compose build --build-arg GITHUB_ACCESS_TOKEN --no-cache website
+          env GITHUB_ACCESS_TOKEN=$GITHUB_ACCESS_TOKEN docker-compose build --no-cache website
           env GITHUB_ACCESS_TOKEN=$GITHUB_ACCESS_TOKEN docker-compose up --detach --build
           docker exec -it nginx nginx -s reload
