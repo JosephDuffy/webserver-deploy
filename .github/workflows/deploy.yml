@@ -12,15 +12,28 @@ jobs:
     steps:
     - name: Deploy
       uses: appleboy/ssh-action@master
-      env:
-        GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_ACCESS_TOKEN }}
       with:
         host: ${{ secrets.SSH_HOST }}
         port: ${{ secrets.SSH_PORT }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
-        envs: GITHUB_ACCESS_TOKEN
         script: |
+          if [[ -d "josephduffy.co.uk" ]]; then
+            cd josephduffy.co.uk || exit
+            git pull
+            cd ..
+          else
+            git clone --single-branch --branch master https://github.com/JosephDuffy/josephduffy.co.uk.git
+          fi
+
+          if [[ -d "webserver-deploy" ]]; then
+            cd webserver-deploy || exit
+            git pull
+          else
+            git clone https://github.com/JosephDuffy/webserver-deploy.git
+            cd webserver-deploy || exit
+          fi
+
           TEMP_DIR=$(mktemp -d)
 
           function cleanup {
@@ -35,8 +48,22 @@ jobs:
           git clone --depth 1 https://github.com/JosephDuffy/webserver-deploy.git
           cd webserver-deploy || exit
 
+          mkdir -p /data/docker
+
+          mkdir /data/docker/nginx
+          mkdir /data/docker/nginx/logs
+          touch /data/docker/nginx/logs/access.log
+          mkdir /data/docker/nginx/sites
+          cp nginx/nginx.conf /data/docker/nginx
+          rm /data/docker/nginx/sites/*
+          cp nginx/sites/* /data/docker/nginx/sites
+
+          mkdir /data/docker/goaccess
+
+          mkdir /data/docker/letsencrypt
+
           if [[ -f ~/.config/stats.josephduffy.co.uk/.htaccess ]]; then
-            cp ~/.config/stats.josephduffy.co.uk/.htaccess ./nginx/.htpasswd
+            cp ~/.config/stats.josephduffy.co.uk/.htaccess /data/docker/nginx/.htpasswd
           else
             >&2 echo "No htaccess file found"
             exit 1

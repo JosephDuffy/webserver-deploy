@@ -11,6 +11,10 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    depends_on:
+      - "goaccess"
+      - "letsencrypt"
+      - "website"
     environment:
       - TZ=Europe/London
       - PUID=1000
@@ -18,10 +22,10 @@ services:
     networks:
       - nginx
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/.htpasswd:/etc/nginx/.htpasswd:ro
-      - ./nginx/sites/:/etc/nginx/sites:ro
-      - ./nginx/logs/:/var/log/nginx/
+      - /data/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /data/docker/nginx/.htpasswd:/etc/nginx/.htpasswd:ro
+      - /data/docker/nginx/sites/:/etc/nginx/sites:ro
+      - /data/docker/nginx/logs/:/var/log/nginx/
       - ../josephduffy.co.uk/nginx-include:/etc/nginx/include.d/josephduffy.co.uk:ro
       - ./goaccess/real-time/:/var/www/real-time-stats/
       - ./letsencrypt/etc/letsencrypt:/etc/letsencrypt:ro
@@ -38,8 +42,8 @@ services:
     networks:
       - nginx
     volumes:
-      - ./nginx/logs/:/var/log/nginx/
-      - ./goaccess/real-time/:/var/www/real-time-stats/
+      - /data/docker/nginx/logs/:/var/log/nginx/
+      - /data/docker/goaccess/real-time/:/var/www/real-time-stats/
 
   letsencrypt:
     container_name: letsencrypt
@@ -54,8 +58,8 @@ services:
       - LEXICON_CLOUDFLARE_USERNAME
       - LEXICON_CLOUDFLARE_TOKEN
     volumes:
-      - ./letsencrypt/etc/letsencrypt:/etc/letsencrypt
-      - ./letsencrypt/domains.conf:/etc/letsencrypt/domains.conf
+      - /data/docker/letsencrypt/etc/letsencrypt:/etc/letsencrypt
+      - /data/docker/letsencrypt/domains.conf:/etc/letsencrypt/domains.conf
       - /var/run/docker.sock:/var/run/docker.sock # to support reloading nginx
 
   website:
