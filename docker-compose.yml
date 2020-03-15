@@ -25,8 +25,8 @@ services:
       - /data/docker/nginx/.htpasswd:/etc/nginx/.htpasswd:ro
       - /data/docker/nginx/sites/:/etc/nginx/sites:ro
       - /data/docker/nginx/logs/:/var/log/nginx/
-      - ../josephduffy.co.uk/nginx-include:/etc/nginx/include.d/josephduffy.co.uk:ro
-      - /data/docker/goaccess/real-time/:/var/www/real-time-stats/
+      - /data/docker/nginx/include.d/:/etc/nginx/include.d/:ro
+      - /data/docker/goaccess/real-time/:/var/www/real-time-stats/:ro
       - /data/docker/letsencrypt/etc/letsencrypt:/etc/letsencrypt:ro
 
   goaccess:
