@@ -37,7 +37,7 @@ jobs:
 
           if [[ -f ~/.config/stats.josephduffy.co.uk/.htaccess ]]; then
             cp ~/.config/stats.josephduffy.co.uk/.htaccess ./nginx/.htpasswd
-          el
+          else
             >&2 echo "No htaccess file found"
             exit 1
           fi
