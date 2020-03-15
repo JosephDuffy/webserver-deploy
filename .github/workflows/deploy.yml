@@ -61,6 +61,7 @@ jobs:
           mkdir /data/docker/goaccess
 
           mkdir /data/docker/letsencrypt
+          cp letsencrypt/domains.conf /data/docker/letsencrypt
 
           if [[ -f ~/.config/stats.josephduffy.co.uk/.htaccess ]]; then
             cp ~/.config/stats.josephduffy.co.uk/.htaccess /data/docker/nginx/.htpasswd

@@ -13,7 +13,6 @@ services:
       - "443:443"
     depends_on:
       - "goaccess"
-      - "letsencrypt"
       - "website"
     environment:
       - TZ=Europe/London
@@ -27,8 +26,8 @@ services:
       - /data/docker/nginx/sites/:/etc/nginx/sites:ro
       - /data/docker/nginx/logs/:/var/log/nginx/
       - ../josephduffy.co.uk/nginx-include:/etc/nginx/include.d/josephduffy.co.uk:ro
-      - ./goaccess/real-time/:/var/www/real-time-stats/
-      - ./letsencrypt/etc/letsencrypt:/etc/letsencrypt:ro
+      - /data/docker/goaccess/real-time/:/var/www/real-time-stats/
+      - /data/docker/letsencrypt/etc/letsencrypt:/etc/letsencrypt:ro
 
   goaccess:
     container_name: goaccess
