@@ -45,12 +45,14 @@ services:
     container_name: letsencrypt
     image: adferrand/letsencrypt-dns:latest
     restart: unless-stopped
-    env_file:
-      - .env.letsencrypt
     environment:
       - TZ=Europe/London
       - PUID=1000
       - PGID=1001
+      - LETSENCRYPT_USER_MAIL
+      - LEXICON_PROVIDER=cloudflare
+      - LEXICON_CLOUDFLARE_USERNAME
+      - LEXICON_CLOUDFLARE_TOKEN
     volumes:
       - ./letsencrypt/etc/letsencrypt:/etc/letsencrypt
       - ./letsencrypt/domains.conf:/etc/letsencrypt/domains.conf

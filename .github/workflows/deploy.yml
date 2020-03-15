@@ -21,22 +21,27 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         envs: GITHUB_ACCESS_TOKEN
         script: |
-          if [[ -d "josephduffy.co.uk" ]]; then
-            cd josephduffy.co.uk || exit
-            git pull
-            cd ..
-          else
-            git clone --single-branch --branch master https://github.com/JosephDuffy/josephduffy.co.uk.git
+          TEMP_DIR=$(mktemp -d)
+
+          function cleanup {
+            rm -r "$TEMP_DIR"
+          }
+
+          cd "$TEMP_DIR" || exit
+
+          trap cleanup EXIT
+
+          git clone --depth 1 https://github.com/JosephDuffy/josephduffy.co.uk.git
+          git clone --depth 1 https://github.com/JosephDuffy/webserver-deploy.git
+          cd webserver-deploy || exit
+
+          if [[ -f ~/.config/stats.josephduffy.co.uk/.htaccess ]]; then
+            cp ~/.config/stats.josephduffy.co.uk/.htaccess ./nginx/.htpasswd
+          el
+            >&2 echo "No htaccess file found"
+            exit 1
           fi
 
-          if [[ -d "webserver-deploy" ]]; then
-            cd webserver-deploy || exit
-            git pull
-          else
-            git clone https://github.com/JosephDuffy/webserver-deploy.git
-            cd webserver-deploy || exit
-          fi
-
-          env GITHUB_ACCESS_TOKEN=$GITHUB_ACCESS_TOKEN docker-compose build --no-cache website
-          env GITHUB_ACCESS_TOKEN=$GITHUB_ACCESS_TOKEN docker-compose up --detach --build
+          env GITHUB_ACCESS_TOKEN="$GITHUB_ACCESS_TOKEN" docker-compose build --no-cache website
+          env GITHUB_ACCESS_TOKEN="$GITHUB_ACCESS_TOKEN" docker-compose up --detach --build
           docker exec nginx nginx -s reload
