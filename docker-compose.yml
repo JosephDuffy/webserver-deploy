@@ -73,5 +73,6 @@ services:
       - TZ=Europe/London
       - PUID=1000
       - PGID=1001
+      - GITHUB_ACCESS_TOKEN
     networks:
         - nginx
