@@ -18,6 +18,8 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
         script: |
+          source ~/.profile
+
           TEMP_DIR=$(mktemp -d)
 
           function cleanup {
