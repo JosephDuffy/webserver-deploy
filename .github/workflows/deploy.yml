@@ -38,6 +38,7 @@ jobs:
 
           mkdir /data/docker/nginx
           cp nginx/nginx.conf /data/docker/nginx
+          cp nginx/no-access-robots.txt /data/docker/nginx/no-access-robots.txt
           mkdir /data/docker/nginx/logs
           touch /data/docker/nginx/logs/access.log
           mkdir /data/docker/nginx/sites

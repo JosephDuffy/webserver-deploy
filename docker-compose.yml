@@ -26,6 +26,7 @@ services:
       - /data/docker/nginx/sites/:/etc/nginx/sites:ro
       - /data/docker/nginx/logs/:/var/log/nginx/
       - /data/docker/nginx/include.d/:/etc/nginx/include.d/:ro
+      - /data/docker/nginx/no-access-robots.txt:/var/www/no-access-robots.txt:ro
       - /data/docker/goaccess/real-time/:/var/www/real-time-stats/:ro
       - /data/docker/letsencrypt/etc/letsencrypt:/etc/letsencrypt:ro
 
