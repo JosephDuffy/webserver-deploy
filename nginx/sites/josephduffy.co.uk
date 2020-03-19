@@ -44,7 +44,7 @@ server {
 	}
 
 	location = /robots.txt {
-		rewrite ^ /var/www/no-access-robots.txt break;
+		alias /var/www/no-access-robots.txt;
 	}
 
 	include /etc/nginx/include.d/josephduffy.co.uk;
@@ -81,7 +81,7 @@ server {
 	}
 
 	location = /robots.txt {
-		rewrite ^ /var/www/no-access-robots.txt break;
+		alias /var/www/no-access-robots.txt;
 	}
 }
 
