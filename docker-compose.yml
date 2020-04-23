@@ -23,6 +23,7 @@ services:
     volumes:
       - /data/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - /data/docker/nginx/.htpasswd:/etc/nginx/.htpasswd:ro
+      - /data/docker/nginx/ffdhe2048.txt:/etc/nginx/ffdhe2048.txt:ro
       - /data/docker/nginx/sites/:/etc/nginx/sites:ro
       - /data/docker/nginx/logs/:/var/log/nginx/
       - /data/docker/nginx/include.d/:/etc/nginx/include.d/:ro
