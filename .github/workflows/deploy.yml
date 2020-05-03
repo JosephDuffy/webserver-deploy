@@ -67,3 +67,5 @@ jobs:
           if [[ $(docker inspect nginx --format='{{.State.Restarting}}') == "false" ]]; then
             docker exec nginx nginx -s reload
           fi
+
+          docker system prune
