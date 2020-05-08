@@ -66,7 +66,7 @@ services:
 
   josephduffy-co-uk:
     container_name: josephduffy-co-uk
-    image: docker.pkg.github.com/josephduffy/josephduffy.co.uk/josephduffy.co.uk:latest
+    image: docker.pkg.github.com/josephduffy/josephduffy.co.uk/website:latest
     restart: unless-stopped
     environment:
       - TZ=Europe/London
