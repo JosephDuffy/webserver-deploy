@@ -1,0 +1,25 @@
+name: Update josephduffy.co.uk
+
+on:
+  repository_dispatch:
+    types: [update_josephduffy-co-uk]
+
+jobs:
+  update:
+    name: Update josephduffy.co.uk
+    runs-on: ubuntu-latest
+    steps:
+    - name: SSH
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        port: ${{ secrets.SSH_PORT }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          source ~/.profile
+          cd /data/docker/
+          docker-compose pull josephduffy-co-uk
+          docker-compose up -d josephduffy-co-uk
+          docker exec nginx nginx -s reload
+          docker image prune --force
