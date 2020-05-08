@@ -14,6 +14,7 @@ services:
     depends_on:
       - "goaccess"
       - "josephduffy-co-uk"
+      - "webhooks"
     environment:
       - TZ=Europe/London
       - PUID=1000
