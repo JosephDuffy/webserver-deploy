@@ -35,6 +35,7 @@ jobs:
           cp -R ./data/docker/. /data/docker/
           cd /data/docker/
 
+          docker-compose pull
           docker-compose up --detach
           docker system prune --force
 
