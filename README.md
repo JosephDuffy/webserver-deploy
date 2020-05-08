@@ -2,12 +2,15 @@
 
 The configuration and automatic deployment of my webserver.
 
-It pulls https://github.com/josephduffy/josephduffy.co.uk, builds it using the included Dockerfile, and serves the website over HTTPS via NGINX.
+## Server setup
 
-Statistics are provided via goaccess.
+The server will need Docker and Docker Compose installed.
 
-Deployments are via GitHub actions.
+### Environment Variables
 
-## Environment Variables
-
-To ensure GitHub entries are loaded the environment should provide the `GITHUB_ACCESS_TOKEN` environment variable.
+| Variable | Reason |
+|----------|--------|
+| `LETSENCRYPT_USER_MAIL` | The email used to register Let's Encrypt certifcates |
+| `LEXICON_CLOUDFLARE_USERNAME` | The username used to access the Cloudflare API for DNS-based domain validation |
+| `LEXICON_CLOUDFLARE_TOKEN` | The token used to access the Cloudflare API for DNS-based domain validation |
+| `GITHUB_ACCESS_TOKEN`| The access token used to load PRs, releases, and repos from GitHub (for josephduffy.co.uk) |
