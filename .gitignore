@@ -1,6 +1,5 @@
-letsencrypt/etc/
-nginx/legacy/
-nginx/logs/
-nginx/.htpasswd
-goaccess/
-.env.letsencrypt
+data/docker/letsencrypt/etc/
+data/docker/nginx/legacy/
+data/docker/nginx/logs/
+data/docker/nginx/.htpasswd
+data/docker/goaccess/

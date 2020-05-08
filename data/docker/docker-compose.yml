@@ -13,7 +13,7 @@ services:
       - "443:443"
     depends_on:
       - "goaccess"
-      - "website"
+      - "josephduffy-co-uk"
     environment:
       - TZ=Europe/London
       - PUID=1000
@@ -21,15 +21,15 @@ services:
     networks:
       - nginx
     volumes:
-      - /data/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - /data/docker/nginx/.htpasswd:/etc/nginx/.htpasswd:ro
-      - /data/docker/nginx/ffdhe2048.txt:/etc/nginx/ffdhe2048.txt:ro
-      - /data/docker/nginx/sites/:/etc/nginx/sites:ro
-      - /data/docker/nginx/logs/:/var/log/nginx/
-      - /data/docker/nginx/include.d/:/etc/nginx/include.d/:ro
-      - /data/docker/nginx/no-access-robots.txt:/var/www/no-access-robots.txt:ro
-      - /data/docker/goaccess/real-time/:/var/www/real-time-stats/:ro
-      - /data/docker/letsencrypt/etc/letsencrypt:/etc/letsencrypt:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/.htpasswd:/etc/nginx/.htpasswd:ro
+      - ./nginx/ffdhe2048.txt:/etc/nginx/ffdhe2048.txt:ro
+      - ./nginx/sites/:/etc/nginx/sites:ro
+      - ./nginx/logs/:/var/log/nginx/
+      - ./nginx/include.d/:/etc/nginx/include.d/:ro
+      - ./nginx/no-access-robots.txt:/var/www/no-access-robots.txt:ro
+      - ./goaccess/real-time/:/var/www/real-time-stats/:ro
+      - ./letsencrypt/etc/letsencrypt:/etc/letsencrypt:ro
 
   goaccess:
     container_name: goaccess
@@ -43,8 +43,8 @@ services:
     networks:
       - nginx
     volumes:
-      - /data/docker/nginx/logs/:/var/log/nginx/
-      - /data/docker/goaccess/real-time/:/var/www/real-time-stats/
+      - ./nginx/logs/:/var/log/nginx/
+      - ./goaccess/real-time/:/var/www/real-time-stats/
 
   letsencrypt:
     container_name: letsencrypt
@@ -59,12 +59,12 @@ services:
       - LEXICON_CLOUDFLARE_USERNAME
       - LEXICON_CLOUDFLARE_TOKEN
     volumes:
-      - /data/docker/letsencrypt/etc/letsencrypt:/etc/letsencrypt
-      - /data/docker/letsencrypt/domains.conf:/etc/letsencrypt/domains.conf
+      - ./letsencrypt/etc/letsencrypt:/etc/letsencrypt
+      - ./letsencrypt/domains.conf:/etc/letsencrypt/domains.conf
       - /var/run/docker.sock:/var/run/docker.sock # to support reloading nginx
 
-  website:
-    container_name: website
+  josephduffy-co-uk:
+    container_name: josephduffy-co-uk
     image: docker.pkg.github.com/josephduffy/josephduffy.co.uk/josephduffy.co.uk:latest
     restart: unless-stopped
     environment:
@@ -75,4 +75,23 @@ services:
     networks:
         - nginx
     volumes:
-      - /data/docker/nginx/include.d/josephduffy.co.uk:/app/nginx-include
+      - ./nginx/include.d/josephduffy.co.uk:/app/nginx-include
+
+  webhooks:
+    container_name: webhooks
+    build:
+      context: ./webhooks
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/London
+      - PUID=1000
+      - PGID=1001
+      - WEBSITE_DEPLOY_SECRET
+    networks:
+        - nginx
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./webhooks/:/etc/webhook/
+      - ./docker-compose.yml:/etc/webhook/docker-compose.yml:ro
+    command: -template

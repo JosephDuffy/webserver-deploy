@@ -108,3 +108,21 @@ server {
 
 	return 301 https://josephduffy.co.uk$request_uri;
 }
+
+server {
+	server_name hooks.josephduffy.co.uk;
+	listen 443 ssl http2 default_server;
+	listen [::]:443 ssl http2 default_server;
+
+	ssl_certificate /etc/letsencrypt/live/josephduffy.co.uk/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/josephduffy.co.uk/privkey.pem;
+	ssl_trusted_certificate /etc/letsencrypt/live/josephduffy.co.uk/chain.pem;
+
+	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+
+	location / {
+		proxy_pass http://webhooks:9000/hooks/;
+		proxy_set_header Host $host;
+		proxy_cache_bypass $http_upgrade;
+	}
+}
