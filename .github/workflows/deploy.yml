@@ -34,11 +34,8 @@ jobs:
 
           mkdir -p /data/docker
 
-          cp -R ./data/docker/ /data/docker
-          cd /data/docker
-
-          echo $pwd
-          ls -al
+          cp -R ./data/docker/. /data/docker/
+          cd /data/docker/
 
           docker-compose up --detach
           docker system prune --force
