@@ -96,4 +96,4 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./webhooks/:/etc/webhook/
       - ./docker-compose.yml:/etc/webhook/docker-compose.yml:ro
-    command: -template
+    command: -template -hotreload -verbose
