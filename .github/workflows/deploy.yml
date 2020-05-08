@@ -29,41 +29,11 @@ jobs:
           cd "$TEMP_DIR" || exit
 
           trap cleanup EXIT
-
-          git clone --depth 1 https://github.com/JosephDuffy/josephduffy.co.uk.git
           git clone --depth 1 https://github.com/JosephDuffy/webserver-deploy.git
           cd webserver-deploy || exit
 
           mkdir -p /data/docker
 
-          mkdir /data/docker/nginx
-          cp nginx/nginx.conf /data/docker/nginx
-          cp nginx/ffdhe2048.txt /data/docker/nginx
-          cp nginx/no-access-robots.txt /data/docker/nginx/no-access-robots.txt
-          mkdir /data/docker/nginx/logs
-          touch /data/docker/nginx/logs/access.log
-          mkdir /data/docker/nginx/sites
-          rm /data/docker/nginx/sites/*
-          cp nginx/sites/* /data/docker/nginx/sites
-          mkdir /data/docker/nginx/include.d
-          rm /data/docker/nginx/include.d/*
-          cp ../josephduffy.co.uk/nginx-include /data/docker/nginx/include.d/josephduffy.co.uk
+          cp -R ./data/docker/ /data/docker
 
-          mkdir /data/docker/goaccess
-
-          mkdir /data/docker/letsencrypt
-          cp letsencrypt/domains.conf /data/docker/letsencrypt
-
-          if [[ -f ~/.config/stats.josephduffy.co.uk/.htaccess ]]; then
-            cp ~/.config/stats.josephduffy.co.uk/.htaccess /data/docker/nginx/.htpasswd
-          else
-            >&2 echo "No htaccess file found"
-            exit 1
-          fi
-
-          docker-compose build --no-cache website
           docker-compose up --detach
-
-          if [[ $(docker inspect nginx --format='{{.State.Restarting}}') == "false" ]]; then
-            docker exec nginx nginx -s reload
-          fi

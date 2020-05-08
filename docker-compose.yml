@@ -65,11 +65,7 @@ services:
 
   website:
     container_name: website
-    build:
-        context: ../josephduffy.co.uk
-        dockerfile: Dockerfile
-        args:
-          - GITHUB_ACCESS_TOKEN
+    image: docker.pkg.github.com/josephduffy/josephduffy.co.uk/josephduffy.co.uk:latest
     restart: unless-stopped
     environment:
       - TZ=Europe/London
@@ -78,3 +74,5 @@ services:
       - GITHUB_ACCESS_TOKEN
     networks:
         - nginx
+    volumes:
+      - /data/docker/nginx/include.d/josephduffy.co.uk:/app/nginx-include
