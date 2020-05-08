@@ -20,6 +20,6 @@ jobs:
           source ~/.profile
           cd /data/docker/
           docker-compose pull josephduffy-co-uk
-          docker-compose up -d josephduffy-co-uk
+          docker-compose up --detach josephduffy-co-uk
           docker exec nginx nginx -s reload
           docker image prune --force
