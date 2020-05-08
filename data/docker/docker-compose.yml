@@ -88,6 +88,7 @@ services:
       - PUID=1000
       - PGID=1001
       - WEBSITE_DEPLOY_SECRET
+      - GITHUB_ACCESS_TOKEN
     networks:
         - nginx
     volumes:
