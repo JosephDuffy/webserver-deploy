@@ -79,6 +79,7 @@ services:
       - ./nginx/include.d/josephduffy.co.uk:/app/nginx-include
 
   matomo_db:
+    container_name: matomo_do
     image: mariadb
     command: --max-allowed-packet=64MB
     restart: always
@@ -90,6 +91,7 @@ services:
       - ./matomo/db.env
 
   matomo_app:
+    container_name: matomo_app
     image: matomo:fpm-alpine
     restart: always
     links:
