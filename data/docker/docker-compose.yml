@@ -45,7 +45,7 @@ services:
       - nginx
     volumes:
       - ./nginx/logs/:/var/log/nginx/
-      - ./goaccess/real-time/:/var/www/real-time-stats/:ro
+      - ./goaccess/real-time/:/var/www/real-time-stats/
 
   letsencrypt:
     container_name: letsencrypt
