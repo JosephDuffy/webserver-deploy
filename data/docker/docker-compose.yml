@@ -94,6 +94,8 @@ services:
     container_name: matomo_app
     image: matomo:fpm-alpine
     restart: always
+    networks:
+      - nginx
     links:
       - matomo_db
     volumes:
