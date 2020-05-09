@@ -29,7 +29,7 @@ services:
       - ./nginx/logs/:/var/log/nginx/
       - ./nginx/include.d/:/etc/nginx/include.d/:ro
       - ./nginx/no-access-robots.txt:/var/www/no-access-robots.txt:ro
-      - ./goaccess/real-time/:/var/www/real-time-stats/:ro
+      - goaccess:/var/www/real-time-stats/:ro
       - ./letsencrypt/etc/letsencrypt:/etc/letsencrypt:ro
 
   goaccess:
@@ -45,7 +45,7 @@ services:
       - nginx
     volumes:
       - ./nginx/logs/:/var/log/nginx/
-      - ./goaccess/real-time/:/var/www/real-time-stats/
+      - goaccess:/var/www/real-time-stats/
 
   letsencrypt:
     container_name: letsencrypt
@@ -119,3 +119,4 @@ services:
 volumes:
   db:
   matomo:
+  goaccess:
