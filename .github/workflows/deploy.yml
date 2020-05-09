@@ -39,6 +39,6 @@ jobs:
           docker-compose up --detach
           docker system prune --force
 
-          if [[ $(docker inspect nginx --format='{{.State.Restarting}}') == "false" ]]; then
+          if [[ $(docker inspect nginx --format='{{.State.Running}}') == "true" ]]; then
             docker exec nginx nginx -s reload
           fi
