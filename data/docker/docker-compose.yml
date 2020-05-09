@@ -79,12 +79,10 @@ services:
       - ./nginx/include.d/josephduffy.co.uk:/app/nginx-include
 
   matomo_db:
-    container_name: matomo_do
+    container_name: matomo_db
     image: mariadb
     command: --max-allowed-packet=64MB
     restart: always
-    networks:
-      - matomo
     volumes:
       - db:/var/lib/mysql
     environment:
@@ -96,8 +94,8 @@ services:
     container_name: matomo_app
     image: matomo:fpm-alpine
     restart: always
-    networks:
-      - matomo
+    links:
+      - matomo_db
     volumes:
 #      - ./config:/var/www/html/config:rw
 #      - ./logs:/var/www/html/logs
@@ -114,7 +112,6 @@ services:
     restart: unless-stopped
     networks:
       - nginx
-      - matomo
     volumes:
       - matomo:/var/www/html:ro
       # see https://github.com/matomo-org/matomo-nginx
