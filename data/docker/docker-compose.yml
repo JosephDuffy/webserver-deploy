@@ -89,9 +89,9 @@ services:
     volumes:
       - db:/var/lib/mysql
     environment:
-      - MYSQL_ROOT_PASSWORD=$MATOMO_MYSQL_ROOT_PASSWORD
-    env_file:
-      - ./matomo/db.env
+      - MYSQL_ROOT_PASSWORD=$MATOMO_MYSQL_PASSWORD
+      - MYSQL_DATABASE=matomo
+      - MYSQL_USER=matomo
 
   matomo_app:
     container_name: matomo_app
@@ -105,9 +105,11 @@ services:
       - matomo:/var/www/html
     environment:
       - MATOMO_DATABASE_HOST=matomo_db
-      - MYSQL_PASSWORD=$MATOMO_MYSQL_PASSWORD
-    env_file:
-      - ./matomo/db.env
+      - MATOMO_DATABASE_ADAPTER=mysql
+      - MATOMO_DATABASE_TABLES_PREFIX=matomo_
+      - MATOMO_DATABASE_USERNAME=matomo
+      - MATOMO_DATABASE_PASSWORD=$MATOMO_MYSQL_PASSWORD
+      - MATOMO_DATABASE_DBNAME=matomo
 
   matomo_web:
     container_name: matomo_web
