@@ -83,6 +83,8 @@ services:
     image: mariadb
     command: --max-allowed-packet=64MB
     restart: always
+    networks:
+      - matomo
     volumes:
       - db:/var/lib/mysql
     environment:
@@ -95,9 +97,7 @@ services:
     image: matomo:fpm-alpine
     restart: always
     networks:
-      - nginx
-    links:
-      - matomo_db
+      - matomo
     volumes:
 #      - ./config:/var/www/html/config:rw
 #      - ./logs:/var/www/html/logs
@@ -114,6 +114,7 @@ services:
     restart: unless-stopped
     networks:
       - nginx
+      - matomo
     volumes:
       - matomo:/var/www/html:ro
       # see https://github.com/matomo-org/matomo-nginx
