@@ -86,7 +86,7 @@ services:
     volumes:
       - db:/var/lib/mysql
     environment:
-      - MYSQL_ROOT_PASSWORD=$MATOMO_MYSQL_PASSWORD
+      - MYSQL_ROOT_PASSWORD=$MATOMO_MYSQL_ROOT_PASSWORD
     env_file:
       - ./matomo/db.env
 
