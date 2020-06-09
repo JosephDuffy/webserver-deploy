@@ -48,21 +48,20 @@ services:
       - ./nginx/logs/:/var/log/nginx/
       - goaccess:/var/www/real-time-stats/
 
-  letsencrypt:
-    container_name: letsencrypt
-    image: adferrand/letsencrypt-dns:latest
+  dnsrobocert:
+    container_name: dnsrobocert
+    image: adferrand/dnsrobocert:3.0.0
     restart: unless-stopped
     environment:
       - TZ=Europe/London
       - PUID=1000
       - PGID=1001
       - LETSENCRYPT_USER_MAIL
-      - LEXICON_PROVIDER=cloudflare
       - LEXICON_CLOUDFLARE_USERNAME
       - LEXICON_CLOUDFLARE_TOKEN
     volumes:
       - ./letsencrypt/etc/letsencrypt:/etc/letsencrypt
-      - ./letsencrypt/domains.conf:/etc/letsencrypt/domains.conf
+      - ./dnsrobocert/config.yml:/etc/dnsrobocert/config.yml
       - /var/run/docker.sock:/var/run/docker.sock # to support reloading nginx
 
   josephduffy-co-uk:
