@@ -15,6 +15,7 @@ jobs:
         port: ${{ secrets.SSH_PORT }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
+        passphrase: ${{ secets.SSH_KEY_PASSPHRASE }}
         script: |
           source ~/.profile
 
