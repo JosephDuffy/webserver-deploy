@@ -50,7 +50,7 @@ services:
 
   dnsrobocert:
     container_name: dnsrobocert
-    image: adferrand/dnsrobocert:3.0.0
+    image: adferrand/dnsrobocert:latest
     restart: unless-stopped
     environment:
       - TZ=Europe/London
