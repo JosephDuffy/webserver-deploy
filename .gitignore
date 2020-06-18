@@ -3,3 +3,4 @@ data/docker/nginx/legacy/
 data/docker/nginx/logs/
 data/docker/nginx/.htpasswd
 data/docker/goaccess/
+data/dockers/tor/jduffyuk/

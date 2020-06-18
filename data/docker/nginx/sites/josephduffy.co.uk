@@ -86,6 +86,25 @@ server {
 }
 
 server {
+	server_name jduffyuk6evkttqy.onion;
+	listen 127.0.0.1:9070;
+
+	access_log off;
+	server_tokens off;
+
+	location / {
+		proxy_pass http://josephduffy-co-uk/;
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection 'upgrade';
+		proxy_set_header Host $host;
+		proxy_cache_bypass $http_upgrade;
+	}
+
+	include /etc/nginx/include.d/josephduffy.co.uk;
+}
+
+server {
 	server_name josephduffy.co.uk noanalytics.josephduffy.co.uk stats.josephduffy.co.uk;
 	listen 80;
 	listen [::]:80;
@@ -107,20 +126,4 @@ server {
 	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
 
 	return 301 https://josephduffy.co.uk$request_uri;
-}
-
-server {
-	server_name analytics.josephduffy.co.uk;
-	listen 443 ssl http2;
-	listen [::]:443 ssl http2;
-
-	ssl_certificate /etc/letsencrypt/live/josephduffy.co.uk/fullchain.pem;
-	ssl_certificate_key /etc/letsencrypt/live/josephduffy.co.uk/privkey.pem;
-	ssl_trusted_certificate /etc/letsencrypt/live/josephduffy.co.uk/chain.pem;
-
-	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-
-	location / {
-		proxy_pass http://matomo_web/;
-	}
 }

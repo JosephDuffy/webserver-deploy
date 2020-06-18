@@ -8,38 +8,39 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
     steps:
-    - name: SSH
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        port: ${{ secrets.SSH_PORT }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_KEY }}
-        passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
-        script: |
-          source ~/.profile
+      - name: SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
+          script: |
+            source ~/.profile
 
-          TEMP_DIR=$(mktemp -d)
+            TEMP_DIR=$(mktemp -d)
 
-          function cleanup {
-            rm -r "$TEMP_DIR"
-          }
+            function cleanup {
+              rm -r "$TEMP_DIR"
+            }
 
-          cd "$TEMP_DIR" || exit
+            cd "$TEMP_DIR" || exit
 
-          trap cleanup EXIT
-          git clone --depth 1 https://github.com/JosephDuffy/webserver-deploy.git
-          cd webserver-deploy || exit
+            trap cleanup EXIT
+            git clone --depth 1 https://github.com/JosephDuffy/webserver-deploy.git
+            cd webserver-deploy || exit
 
-          mkdir -p /data/docker
+            mkdir -p /data/docker
 
-          cp -R ./data/docker/. /data/docker/
-          cd /data/docker/
+            cp -R ./data/docker/. /data/docker/
+            cd /data/docker/
 
-          docker-compose pull
-          docker-compose up --detach --remove-orphans
-          docker system prune --force
+            docker-compose pull
+            docker-compose build
+            docker-compose up --detach --remove-orphans
+            docker system prune --force
 
-          if [[ $(docker inspect nginx --format='{{.State.Running}}') == "true" ]]; then
-            docker exec nginx nginx -s reload
-          fi
+            if [[ $(docker inspect nginx --format='{{.State.Running}}') == "true" ]]; then
+              docker exec nginx nginx -s reload
+            fi
