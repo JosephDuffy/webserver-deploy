@@ -9,18 +9,18 @@ jobs:
     name: Update josephduffy.co.uk
     runs-on: ubuntu-latest
     steps:
-    - name: SSH
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        port: ${{ secrets.SSH_PORT }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_KEY }}
-        passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
-        script: |
-          source ~/.profile
-          cd /data/docker/
-          docker-compose pull josephduffy-co-uk
-          docker-compose up --detach josephduffy-co-uk
-          docker exec nginx nginx -s reload
-          docker image prune --force
+      - name: SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_KEY_PASSPHRASE }}
+          script: |
+            source ~/.profile
+            cd /data/docker/
+            docker-compose pull josephduffy-co-uk josephduffy-co-uk-no-analytics
+            docker-compose up --detach josephduffy-co-uk josephduffy-co-uk-no-analytics
+            docker exec nginx nginx -s reload
+            docker image prune --force
