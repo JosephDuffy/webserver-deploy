@@ -37,8 +37,7 @@ jobs:
             cd /data/docker/
 
             docker-compose pull
-            docker-compose build
-            docker-compose up --detach --remove-orphans
+            docker-compose up --detach --build --remove-orphans
             docker system prune --force
 
             if [[ $(docker inspect nginx --format='{{.State.Running}}') == "true" ]]; then
