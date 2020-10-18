@@ -43,10 +43,6 @@ server {
 		proxy_cache_bypass $http_upgrade;
 	}
 
-	location = /robots.txt {
-		alias /var/www/no-access-robots.txt;
-	}
-
 	include /etc/nginx/include.d/josephduffy.co.uk;
 }
 
