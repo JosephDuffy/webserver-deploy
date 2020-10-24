@@ -20,7 +20,7 @@ jobs:
           script: |
             source ~/.profile
             cd /data/docker/
-            docker-compose pull josephduffy-co-uk josephduffy-co-uk-no-analytics
+            docker-compose --verbose pull josephduffy-co-uk josephduffy-co-uk-no-analytics
             docker-compose up --detach josephduffy-co-uk josephduffy-co-uk-no-analytics
             docker exec nginx nginx -s reload
             docker image prune --force
