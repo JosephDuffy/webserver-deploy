@@ -16,6 +16,7 @@ services:
     depends_on:
       - "goaccess"
       - "josephduffy-co-uk"
+      - "josephduffy-co-uk-no-analytics"
     environment:
       - TZ=Europe/London
       - PUID=1000
@@ -95,7 +96,7 @@ services:
     ports:
       - "9050:9050"
     depends_on:
-      - "josephduffy-co-uk"
+      - "josephduffy-co-uk-no-analytics"
     networks:
       - tor
 
