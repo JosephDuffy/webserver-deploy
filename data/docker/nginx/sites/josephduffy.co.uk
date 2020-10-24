@@ -17,8 +17,6 @@ server {
 		proxy_set_header Host $host;
 		proxy_cache_bypass $http_upgrade;
 	}
-
-	include /etc/nginx/include.d/josephduffy.co.uk;
 }
 
 server {
@@ -42,8 +40,6 @@ server {
 		proxy_set_header Host $host;
 		proxy_cache_bypass $http_upgrade;
 	}
-
-	include /etc/nginx/include.d/josephduffy.co.uk;
 }
 
 server {

@@ -73,11 +73,8 @@ services:
       - TZ=Europe/London
       - PUID=1000
       - PGID=1001
-      - GITHUB_ACCESS_TOKEN
     networks:
       - nginx
-    volumes:
-      - ./nginx/include.d/josephduffy.co.uk:/app/nginx-include
 
   josephduffy-co-uk-no-analytics:
     container_name: josephduffy-co-uk-no-analytics
@@ -87,12 +84,9 @@ services:
       - TZ=Europe/London
       - PUID=1000
       - PGID=1001
-      - GITHUB_ACCESS_TOKEN
     networks:
       - nginx
       - tor
-    volumes:
-      - ./nginx/include.d/josephduffy.co.uk:/app/nginx-include
 
   tor:
     container_name: tor
