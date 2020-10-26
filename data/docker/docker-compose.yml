@@ -92,7 +92,7 @@ services:
 
   contact-josephduffy-co-uk:
     container_name: contact-josephduffy-co-uk
-    image: docker.pkg.github.com/josephduffy/contact.josephduffy.co.uk:latest
+    image: ghcr.io/josephduffy/contact.josephduffy.co.uk:latest
     restart: unless-stopped
     environment:
       - TZ=Europe/London
