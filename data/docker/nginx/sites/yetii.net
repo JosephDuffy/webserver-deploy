@@ -18,7 +18,17 @@ server {
 		return 301 https://josephduffy.co.uk/apps;
 	}
 
-	location = /contact {
+	location /contact {
+		if ($arg_subject = "gathered") {
+			return 301 https://josephduffy.co.uk/contact/gathered;
+		}
+		if ($arg_subject = "scanula") {
+			return 301 https://josephduffy.co.uk/contact/scanula;
+		}
+		if ($arg_subject = "four-squares") {
+			return 301 https://josephduffy.co.uk/contact/four-squares;
+		}
+
 		return 301 https://josephduffy.co.uk/contact;
 	}
 
@@ -56,11 +66,7 @@ server {
 		return 301 https://josephduffy.co.uk/contact/gathered;
 	}
 
-	# Snaula
-
-	location = /contact?subject=scanula {
-		return 301 https://josephduffy.co.uk/contact/scanula;
-	}
+	# Scanula
 
 	location = /scanula/ {
 		return 301 https://josephduffy.co.uk/apps/scanula;
@@ -88,10 +94,6 @@ server {
 
 	# Four Squares
 
-	location = /contact?subject=four-squares {
-		return 301 https://josephduffy.co.uk/contact/four-squares;
-	}
-
 	location = /four-squares/ {
 		return 301 https://josephduffy.co.uk/apps/four-squares;
 	}
@@ -117,10 +119,6 @@ server {
 	}
 
 	# Word Art
-
-	location = /contact?subject=word-art {
-		return 301 https://josephduffy.co.uk/contact;
-	}
 
 	location /word-art/.* {
 		return 301 https://josephduffy.co.uk/apps/;
