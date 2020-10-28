@@ -12,7 +12,12 @@ profiles:
 
 certificates:
   - domains:
-    - "*.josephduffy.co.uk"
-    - "josephduffy.co.uk"
+      - "*.josephduffy.co.uk"
+      - "josephduffy.co.uk"
+    profile: cloudflare
+    deploy_hook: docker exec nginx nginx -s reload
+  - domains:
+      - "*.yetii.net"
+      - "yetii.net"
     profile: cloudflare
     deploy_hook: docker exec nginx nginx -s reload

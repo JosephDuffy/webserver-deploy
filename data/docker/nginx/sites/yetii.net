@@ -1,0 +1,132 @@
+server {
+	server_name yetii.net www.yetii.net;
+
+	listen 80;
+	listen [::]:80;
+	listen 443 ssl http2;
+	listen [::]:443 ssl http2;
+
+	ssl_certificate /etc/letsencrypt/live/yetii.net/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/yetii.net/privkey.pem;
+	ssl_trusted_certificate /etc/letsencrypt/live/yetii.net/chain.pem;
+
+	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+
+	# General Reidrects
+
+	location = /apps {
+		return 301 https://josephduffy.co.uk/apps;
+	}
+
+	location = /contact {
+		return 301 https://josephduffy.co.uk/contact;
+	}
+
+	location = /sitemap.xml {
+		return 301 https://josephduffy.co.uk/sitemap.xml;
+	}
+
+	location = /contact?subject=gathered {
+		return 301 https://josephduffy.co.uk/contact/gathered;
+	}
+
+	# Gathered
+
+	location = /gathered/ {
+		return 301 https://josephduffy.co.uk/apps/gathered;
+	}
+
+	location = /gathered/download {
+		return 301 https://apps.apple.com/app/apple-store/id929726748?pt=96178896&ct=yetii-redirection&mt=8;
+	}
+
+	location = /gathered/feedback {
+		return 301 https://josephduffy.co.uk/contact/gathered;
+	}
+
+	location = /gathered/privacy {
+		return 301 https://josephduffy.co.uk/apps/gathered/privacy;
+	}
+
+	location = /gathered/changelog {
+		return 301 https://josephduffy.co.uk/apps/gathered/changelog;
+	}
+
+	location = /apps/gathered/contact {
+		return 301 https://josephduffy.co.uk/contact/gathered;
+	}
+
+	# Snaula
+
+	location = /contact?subject=scanula {
+		return 301 https://josephduffy.co.uk/contact/scanula;
+	}
+
+	location = /scanula/ {
+		return 301 https://josephduffy.co.uk/apps/scanula;
+	}
+
+	location = /scanula/download {
+		return 301 https://apps.apple.com/app/apple-store/id1063048919?pt=96178896&ct=yetii-redirect&mt=8;
+	}
+
+	location = /scanula/feedback {
+		return 301 https://josephduffy.co.uk/contact/scanula;
+	}
+
+	location = /scanula/privacy {
+		return 301 https://josephduffy.co.uk/apps/scanula/privacy;
+	}
+
+	location = /scanula/changelog {
+		return 301 https://josephduffy.co.uk/apps/scanula/changelog;
+	}
+
+	location = /apps/scanula/contact {
+		return 301 https://josephduffy.co.uk/contact/scanula;
+	}
+
+	# Four Squares
+
+	location = /contact?subject=four-squares {
+		return 301 https://josephduffy.co.uk/contact/four-squares;
+	}
+
+	location = /four-squares/ {
+		return 301 https://josephduffy.co.uk/apps/four-squares;
+	}
+
+	location = /four-squares/download {
+		return 301 https://apps.apple.com/app/apple-store/id982796319?pt=96178896&ct=yetii-redirect&mt=8;
+	}
+
+	location = /four-squares/feedback {
+		return 301 https://josephduffy.co.uk/contact/four-squares;
+	}
+
+	location = /four-squares/privacy {
+		return 301 https://josephduffy.co.uk/apps/four-squares/privacy;
+	}
+
+	location = /four-squares/changelog {
+		return 301 https://josephduffy.co.uk/apps/four-squares/changelog;
+	}
+
+	location = /apps/four-squares/changelog {
+		return 301 https://josephduffy.co.uk/contact/four-squares;
+	}
+
+	# Word Art
+
+	location = /contact?subject=word-art {
+		return 301 https://josephduffy.co.uk/contact;
+	}
+
+	location /word-art/.* {
+		return 301 https://josephduffy.co.uk/apps/;
+	}
+
+	# Catch-all
+
+	return 301 https://josephduffy.co.uk/yetii;
+}
