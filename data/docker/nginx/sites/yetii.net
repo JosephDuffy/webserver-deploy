@@ -118,7 +118,7 @@ server {
 		return 301 https://josephduffy.co.uk/apps/four-squares/changelog;
 	}
 
-	location = /four-squares/changelog {
+	location = /four-squares/contact {
 		return 301 https://josephduffy.co.uk/contact/four-squares;
 	}
 
