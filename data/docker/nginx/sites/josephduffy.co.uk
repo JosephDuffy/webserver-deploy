@@ -105,7 +105,7 @@ server {
 }
 
 server {
-	server_name www.josephduffy.co.uk new.josephduffy.co.uk;
+	server_name www.josephduffy.co.uk new.josephduffy.co.uk old.josephduffy.co.uk;
 	listen 80;
 	listen [::]:80;
 	listen 443 ssl http2;
