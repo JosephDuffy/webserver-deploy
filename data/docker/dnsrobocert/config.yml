@@ -21,3 +21,8 @@ certificates:
       - "yetii.net"
     profile: cloudflare
     deploy_hook: docker exec nginx nginx -s reload
+  - domains:
+      - "*.bakingfeedback.com"
+      - "bakingfeedback.com"
+    profile: cloudflare
+    deploy_hook: docker exec nginx nginx -s reload
