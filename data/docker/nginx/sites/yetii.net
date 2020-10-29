@@ -88,6 +88,10 @@ server {
 		return 301 https://josephduffy.co.uk/apps/scanula/changelog;
 	}
 
+	location = /scanula/press {
+		return 301 https://josephduffy.co.uk/apps/scanula;
+	}
+
 	location = /scanula/contact {
 		return 301 https://josephduffy.co.uk/contact/scanula;
 	}
