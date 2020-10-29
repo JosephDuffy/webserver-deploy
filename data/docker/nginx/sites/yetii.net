@@ -12,13 +12,13 @@ server {
 
 	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
 
-	# General Reidrects
+	# General Redirects
 
 	location = /apps {
 		return 301 https://josephduffy.co.uk/apps;
 	}
 
-	location /contact {
+	location = /contact {
 		if ($arg_subject = "gathered") {
 			return 301 https://josephduffy.co.uk/contact/gathered;
 		}
@@ -62,7 +62,7 @@ server {
 		return 301 https://josephduffy.co.uk/apps/gathered/changelog;
 	}
 
-	location = /apps/gathered/contact {
+	location = /gathered/contact {
 		return 301 https://josephduffy.co.uk/contact/gathered;
 	}
 
@@ -88,7 +88,7 @@ server {
 		return 301 https://josephduffy.co.uk/apps/scanula/changelog;
 	}
 
-	location = /apps/scanula/contact {
+	location = /scanula/contact {
 		return 301 https://josephduffy.co.uk/contact/scanula;
 	}
 
@@ -114,17 +114,19 @@ server {
 		return 301 https://josephduffy.co.uk/apps/four-squares/changelog;
 	}
 
-	location = /apps/four-squares/changelog {
+	location = /four-squares/changelog {
 		return 301 https://josephduffy.co.uk/contact/four-squares;
 	}
 
 	# Word Art
 
-	location /word-art/.* {
+	location /word-art/ {
 		return 301 https://josephduffy.co.uk/apps/;
 	}
 
 	# Catch-all
 
-	return 301 https://josephduffy.co.uk/yetii;
+	location / {
+		return 301 https://josephduffy.co.uk/yetii;
+	}
 }
