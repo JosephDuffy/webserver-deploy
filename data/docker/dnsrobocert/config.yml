@@ -17,6 +17,11 @@ certificates:
     profile: cloudflare
     deploy_hook: docker exec nginx nginx -s reload
   - domains:
+      - "*.josephduffy.me"
+      - "josephduffy.me"
+    profile: cloudflare
+    deploy_hook: docker exec nginx nginx -s reload
+  - domains:
       - "*.duffydesigns.co.uk"
       - "duffydesigns.co.uk"
     profile: cloudflare

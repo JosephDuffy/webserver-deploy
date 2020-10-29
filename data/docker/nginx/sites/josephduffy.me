@@ -1,0 +1,22 @@
+
+server {
+	server_name www.josephduffy.me josephduffy.me;
+	listen 80;
+	listen [::]:80;
+	listen 443 ssl http2;
+	listen [::]:443 ssl http2;
+
+	ssl_certificate /etc/letsencrypt/live/josephduffy.me/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/josephduffy.me/privkey.pem;
+	ssl_trusted_certificate /etc/letsencrypt/live/josephduffy.me/chain.pem;
+
+	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+
+	location = /downloads/weblocaliserupdate.safariextz {
+		return 301 https://josephduffy.co.uk/weblocaliser/weblocaliserupdate.safariextz;
+	}
+
+	location / {
+		return 301 https://josephduffy.co.uk/$request_uri;
+	}
+}
