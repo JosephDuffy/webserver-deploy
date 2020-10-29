@@ -1,0 +1,85 @@
+
+server {
+	server_name www.duffydesigns.co.uk duffydesigns.co.uk;
+	listen 80;
+	listen [::]:80;
+	listen 443 ssl http2;
+	listen [::]:443 ssl http2;
+
+	ssl_certificate /etc/letsencrypt/live/duffydesigns.co.uk/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/duffydesigns.co.uk/privkey.pem;
+	ssl_trusted_certificate /etc/letsencrypt/live/duffydesigns.co.uk/chain.pem;
+
+	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+
+	location = /downloads/weblocaliser.safariextz {
+		return 301 https://josephduffy.co.uk/weblocaliser/weblocaliser.safariextz;
+	}
+
+	# V1.0
+
+	location = /Google.safariextz {
+		return 301 https://josephduffy.co.uk/weblocaliser/weblocaliser.safariextz;
+	}
+
+	location = /GoogleUKUpdate.plist {
+		return 301 https://josephduffy.co.uk/weblocaliser/update.plist;
+	}
+
+	# V1.2
+
+	location = /WebLocalizerUpdate.plist {
+		return 301 https://josephduffy.co.uk/weblocaliser/update.plist;
+	}
+
+	location = /GoogleSearchEnhancer.safariextz {
+		return 301 https://josephduffy.co.uk/weblocaliser/weblocaliser.safariextz;
+	}
+
+	# V1.3
+
+	location = /WebLocalizer1.3.safariextz {
+		return 301 https://josephduffy.co.uk/weblocaliser/weblocaliser.safariextz;
+	}
+
+	# V1.3.1
+
+	location = /WebLocalizer1.3.1.safariextz {
+		return 301 https://josephduffy.co.uk/weblocaliser/weblocaliser.safariextz;
+	}
+
+	# V1.3.2
+
+	location = /WebLocalizer1.3.2.safariextz {
+		return 301 https://josephduffy.co.uk/weblocaliser/weblocaliser.safariextz;
+	}
+
+	# V2.0
+
+	location = /WebLocalizer.safariextz {
+		return 301 https://josephduffy.co.uk/weblocaliser/weblocaliser.safariextz;
+	}
+
+	# V2.1
+
+	location = /WebLocaliserDownloads/WebLocaliserUpdate.safariextz {
+		return 301 https://josephduffy.co.uk/weblocaliser/weblocaliserupdate.safariextz;
+	}
+
+	# V2.2
+
+	# Also From josephduffy.me
+	location = /downloads/weblocaliserupdate.safariextz {
+		return 301 https://josephduffy.co.uk/weblocaliser/weblocaliserupdate.safariextz;
+	}
+
+	location = /downloads/weblocaliser.plist {
+		return 301 https://josephduffy.co.uk/weblocaliser/update.plist;
+	}
+
+	# Fallback
+
+	location / {
+		return 301 https://josephduffy.co.uk/$request_uri;
+	}
+}
