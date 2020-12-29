@@ -69,7 +69,7 @@ services:
 
   josephduffy-co-uk:
     container_name: josephduffy-co-uk
-    image: docker.pkg.github.com/josephduffy/josephduffy.co.uk/website:analytics
+    image: ghcr.io/josephduffy/josephduffy.co.uk:analytics
     restart: unless-stopped
     environment:
       - TZ=Europe/London
@@ -80,7 +80,7 @@ services:
 
   josephduffy-co-uk-no-analytics:
     container_name: josephduffy-co-uk-no-analytics
-    image: docker.pkg.github.com/josephduffy/josephduffy.co.uk/website:latest
+    image: ghcr.io/josephduffy/josephduffy.co.uk:latest
     restart: unless-stopped
     environment:
       - TZ=Europe/London
