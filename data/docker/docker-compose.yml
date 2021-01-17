@@ -98,7 +98,7 @@ services:
       - TZ=Europe/London
       - PUID=1000
       - PGID=1001
-      - MAILGUN_API_KEY
+      - MAILGUN_PRIVATE_API_KEY
       - MAILGUN_DOMAIN
       - HCAPTCHA_SECRET
     networks:
