@@ -1,0 +1,27 @@
+[
+  {
+    "id": "update-josephduffy-co-uk",
+    "execute-command": "/etc/webhook/update-container.sh",
+    "command-working-directory": "/data/docker",
+    "pass-arguments-to-command": [
+      {
+        "source": "payload",
+        "name": "package.name"
+      }
+    ],
+    "trigger-rule": {
+      "and": [
+        {
+          "match": {
+            "type": "payload-hash-sha1",
+            "secret": "mysecret",
+            "parameter": {
+              "source": "header",
+              "name": "X-Hub-Signature"
+            }
+          }
+        }
+      ]
+    }
+  }
+]

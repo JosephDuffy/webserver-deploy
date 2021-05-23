@@ -15,9 +15,9 @@ services:
       - "443:443"
     depends_on:
       - "goaccess"
-      - "josephduffy-co-uk"
-      - "josephduffy-co-uk-no-analytics"
-      - "contact-josephduffy-co-uk"
+      # - "josephduffy-co-uk"
+      # - "josephduffy-co-uk-no-analytics"
+      # - "contact-josephduffy-co-uk"
     environment:
       - TZ=Europe/London
       - PUID=1000
@@ -67,28 +67,45 @@ services:
       - ./dnsrobocert/config.yml:/etc/dnsrobocert/config.yml
       - /var/run/docker.sock:/var/run/docker.sock # to support reloading nginx
 
-  josephduffy-co-uk:
-    container_name: josephduffy-co-uk
-    image: ghcr.io/josephduffy/josephduffy.co.uk:analytics
-    restart: unless-stopped
-    environment:
-      - TZ=Europe/London
-      - PUID=1000
-      - PGID=1001
-    networks:
-      - nginx
+  # josephduffy-co-uk:
+  #   container_name: josephduffy-co-uk
+  #   image: ghcr.io/josephduffy/josephduffy.co.uk:analytics
+  #   restart: unless-stopped
+  #   environment:
+  #     - TZ=Europe/London
+  #     - PUID=1000
+  #     - PGID=1001
+  #   networks:
+  #     - nginx
 
-  josephduffy-co-uk-no-analytics:
-    container_name: josephduffy-co-uk-no-analytics
-    image: ghcr.io/josephduffy/josephduffy.co.uk:latest
+  # josephduffy-co-uk-no-analytics:
+  #   container_name: josephduffy-co-uk-no-analytics
+  #   image: ghcr.io/josephduffy/josephduffy.co.uk:latest
+  #   restart: unless-stopped
+  #   environment:
+  #     - TZ=Europe/London
+  #     - PUID=1000
+  #     - PGID=1001
+  #   networks:
+  #     - nginx
+  #     - tor
+
+  webhook:
+    container_name: webhook
+    build: ./webhook
     restart: unless-stopped
-    environment:
-      - TZ=Europe/London
-      - PUID=1000
-      - PGID=1001
     networks:
       - nginx
-      - tor
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./webhook:/etc/webhook:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker-compose.yml:/data/docker/docker-compose.yml:ro
+    command:
+      - "-verbose"
+      - "-hooks=/etc/webhook/hooks.json"
+      - "-hotreload"
 
   contact-josephduffy-co-uk:
     container_name: contact-josephduffy-co-uk
@@ -104,44 +121,44 @@ services:
     networks:
       - nginx
 
-  tor:
-    container_name: tor
-    build: ./tor/
-    restart: unless-stopped
-    ports:
-      - "9050:9050"
-    depends_on:
-      - "josephduffy-co-uk-no-analytics"
-    networks:
-      - tor
+  # tor:
+  #   container_name: tor
+  #   build: ./tor/
+  #   restart: unless-stopped
+  #   ports:
+  #     - "9050:9050"
+  #   depends_on:
+  #     - "josephduffy-co-uk-no-analytics"
+  #   networks:
+  #     - tor
 
-  mariadb:
-    container_name: mariadb
-    image: mariadb
-    command: --max-allowed-packet=64MB
-    restart: always
-    networks:
-      - matomo
-    volumes:
-      - ./mariadb:/var/lib/mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=
-    env_file:
-      - ./mariadb.env
+  # mariadb:
+  #   container_name: mariadb
+  #   image: mariadb
+  #   command: --max-allowed-packet=64MB
+  #   restart: always
+  #   networks:
+  #     - matomo
+  #   volumes:
+  #     - ./mariadb:/var/lib/mysql
+  #   environment:
+  #     - MYSQL_ROOT_PASSWORD=
+  #   env_file:
+  #     - ./mariadb.env
 
-  matomo:
-    container_name: matomo
-    image: matomo:fpm-alpine
-    restart: always
-    networks:
-      - matomo
-      - nginx
-    volumes:
-      - matomo:/var/www/matomo
-    environment:
-      - MATOMO_DATABASE_HOST=mariadb
-    env_file:
-      - ./mariadb.env
+  # matomo:
+  #   container_name: matomo
+  #   image: matomo:fpm-alpine
+  #   restart: always
+  #   networks:
+  #     - matomo
+  #     - nginx
+  #   volumes:
+  #     - matomo:/var/www/matomo
+  #   environment:
+  #     - MATOMO_DATABASE_HOST=mariadb
+  #   env_file:
+  #     - ./mariadb.env
 
 volumes:
   goaccess:
