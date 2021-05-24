@@ -1,6 +1,6 @@
 [
   {
-    "id": "update-josephduffy-co-uk",
+    "id": "update-container",
     "execute-command": "/etc/webhook/update-container.sh",
     "command-working-directory": "/data/docker",
     "pass-arguments-to-command": [
@@ -13,11 +13,11 @@
       "and": [
         {
           "match": {
-            "type": "payload-hash-sha1",
-            "secret": "mysecret",
+            "type": "payload-hmac-sha256",
+            "secret": "{{ getenv "UPDATE_CONTAINER_SECRET" | js }}",
             "parameter": {
               "source": "header",
-              "name": "X-Hub-Signature"
+              "name": "X-Hub-Signature-256"
             }
           }
         }
