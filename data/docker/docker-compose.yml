@@ -122,6 +122,15 @@ services:
     networks:
       - nginx
 
+  vapordocc:
+    container_name: vapordocc
+    image: ghcr.io/josephduffy/vapordocc-website:latest
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/London
+    networks:
+      - nginx
+
   tor:
     container_name: tor
     build: ./tor/
