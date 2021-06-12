@@ -131,6 +131,15 @@ services:
     networks:
       - nginx
 
+  docc-nginx:
+    container_name: docc-nginx
+    image: ghcr.io/josephduffy/docc-nginx:latest
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/London
+    networks:
+      - nginx
+
   tor:
     container_name: tor
     build: ./tor/
