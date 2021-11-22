@@ -20,6 +20,30 @@
               "name": "X-Hub-Signature-256"
             }
           }
+        },
+        {
+          "or": [
+            {
+              "match": {
+                "type": "value",
+                "secret": "josephduffy-co-uk",
+                "parameter": {
+                  "source": "payload",
+                  "name": "registry_package.name"
+                }
+              }
+            },
+            {
+              "match": {
+                "type": "value",
+                "secret": "contact-josephduffy-co-uk",
+                "parameter": {
+                  "source": "payload",
+                  "name": "registry_package.name"
+                }
+              }
+            }
+          ]
         }
       ]
     }
