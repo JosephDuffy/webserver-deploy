@@ -1,8 +1,11 @@
 [
   {
     "id": "update-josephduffy-co-uk-container",
-    "execute-command": "/etc/webhook/update-container.sh josephduffy-co-uk",
+    "execute-command": "/etc/webhook/update-container.sh",
     "command-working-directory": "/data/docker",
+    "pass-arguments-to-command": [
+      "josephduffy-co-uk"
+    ],
     "trigger-rule": {
       "and": [
         {
@@ -30,8 +33,11 @@
   },
   {
     "id": "update-contact-josephduffy-co-uk-container",
-    "execute-command": "/etc/webhook/update-container.sh contact-josephduffy-co-uk",
+    "execute-command": "/etc/webhook/update-container.sh",
     "command-working-directory": "/data/docker",
+    "pass-arguments-to-command": [
+      "contact-josephduffy-co-uk"
+    ],
     "trigger-rule": {
       "and": [
         {
