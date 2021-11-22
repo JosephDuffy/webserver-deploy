@@ -1,14 +1,8 @@
 [
   {
-    "id": "update-container",
-    "execute-command": "/etc/webhook/update-container.sh",
+    "id": "update-josephduffy-co-uk-container",
+    "execute-command": "/etc/webhook/update-container.sh josephduffy-co-uk",
     "command-working-directory": "/data/docker",
-    "pass-arguments-to-command": [
-      {
-        "source": "payload",
-        "name": "package.name"
-      }
-    ],
     "trigger-rule": {
       "and": [
         {
@@ -22,28 +16,43 @@
           }
         },
         {
-          "or": [
-            {
-              "match": {
-                "type": "value",
-                "secret": "josephduffy-co-uk",
-                "parameter": {
-                  "source": "payload",
-                  "name": "registry_package.name"
-                }
-              }
-            },
-            {
-              "match": {
-                "type": "value",
-                "secret": "contact-josephduffy-co-uk",
-                "parameter": {
-                  "source": "payload",
-                  "name": "registry_package.name"
-                }
-              }
+          "match": {
+            "type": "value",
+            "secret": "josephduffy.co.uk",
+            "parameter": {
+              "source": "payload",
+              "name": "registry_package.name"
             }
-          ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "update-contact-josephduffy-co-uk-container",
+    "execute-command": "/etc/webhook/update-container.sh contact-josephduffy-co-uk",
+    "command-working-directory": "/data/docker",
+    "trigger-rule": {
+      "and": [
+        {
+          "match": {
+            "type": "payload-hmac-sha256",
+            "secret": "{{ getenv "UPDATE_CONTAINER_SECRET" | js }}",
+            "parameter": {
+              "source": "header",
+              "name": "X-Hub-Signature-256"
+            }
+          }
+        },
+        {
+          "match": {
+            "type": "value",
+            "secret": "contact.josephduffy.co.uk",
+            "parameter": {
+              "source": "payload",
+              "name": "registry_package.name"
+            }
+          }
         }
       ]
     }
