@@ -4,7 +4,10 @@
     "execute-command": "/etc/webhook/update-container.sh",
     "command-working-directory": "/data/docker",
     "pass-arguments-to-command": [
-      "josephduffy-co-uk"
+      {
+        "source": "string",
+        "name": "josephduffy-co-uk"
+      }
     ],
     "trigger-rule": {
       "and": [
@@ -36,7 +39,10 @@
     "execute-command": "/etc/webhook/update-container.sh",
     "command-working-directory": "/data/docker",
     "pass-arguments-to-command": [
-      "contact-josephduffy-co-uk"
+      {
+        "source": "string",
+        "name": "contact-josephduffy-co-uk"
+      }
     ],
     "trigger-rule": {
       "and": [
