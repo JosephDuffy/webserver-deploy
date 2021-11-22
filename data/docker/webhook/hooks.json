@@ -18,7 +18,7 @@
         {
           "match": {
             "type": "value",
-            "secret": "josephduffy.co.uk",
+            "value": "josephduffy.co.uk",
             "parameter": {
               "source": "payload",
               "name": "registry_package.name"
@@ -47,7 +47,7 @@
         {
           "match": {
             "type": "value",
-            "secret": "contact.josephduffy.co.uk",
+            "value": "contact.josephduffy.co.uk",
             "parameter": {
               "source": "payload",
               "name": "registry_package.name"
