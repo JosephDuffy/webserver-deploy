@@ -16,7 +16,6 @@ services:
     depends_on:
       - "goaccess"
       - "josephduffy-co-uk"
-      - "contact-josephduffy-co-uk"
     environment:
       - TZ=Europe/London
       - PUID=1000
@@ -102,20 +101,6 @@ services:
       - "-template" # Enable use `getenv`
       - "-hooks=/etc/webhook/hooks.json"
       - "-hotreload"
-
-  contact-josephduffy-co-uk:
-    container_name: contact-josephduffy-co-uk
-    image: ghcr.io/josephduffy/contact.josephduffy.co.uk:latest
-    restart: unless-stopped
-    environment:
-      - TZ=Europe/London
-      - PUID=1000
-      - PGID=1001
-      - MAILGUN_PRIVATE_API_KEY
-      - MAILGUN_DOMAIN
-      - HCAPTCHA_SECRET
-    networks:
-      - nginx
 
   vapordocc:
     container_name: vapordocc
