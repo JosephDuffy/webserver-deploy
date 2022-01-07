@@ -74,9 +74,9 @@ services:
       - TZ=Europe/London
       - PUID=1000
       - PGID=1001
-      - WEBSITE_URL=https://josephduffy.co.uk/
+      - WEBSITE_URL
       - HCAPTCHA_SECRET
-      - HCAPTCHA_SITE_KEY=3549990c-5b31-4c18-84b6-e7f57fcde61b
+      - HCAPTCHA_SITE_KEY
       - GITHUB_ACCESS_TOKEN
       - MAILGUN_PRIVATE_API_KEY
       - MAILGUN_DOMAIN
