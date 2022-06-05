@@ -36,3 +36,8 @@ certificates:
       - "bakingfeedback.com"
     profile: cloudflare
     deploy_hook: docker exec nginx nginx -s reload
+  - domains:
+      - "*.magicgo.to"
+      - "magicgo.to"
+    profile: cloudflare
+    deploy_hook: docker exec nginx nginx -s reload
