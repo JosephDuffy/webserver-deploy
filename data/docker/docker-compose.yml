@@ -108,6 +108,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - UPDATE_CONTAINER_SECRET
+    secrets:
+     - GITHUB_LOGIN_PAT
     command:
       - "-verbose"
       - "-template" # Enable use `getenv`
@@ -183,3 +185,7 @@ services:
 volumes:
   goaccess:
   matomo:
+
+secrets:
+  GITHUB_LOGIN_PAT:
+    file: GITHUB_LOGIN_PAT.txt

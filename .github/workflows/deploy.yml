@@ -22,6 +22,7 @@ jobs:
             TEMP_DIR=$(mktemp -d)
 
             function cleanup {
+              rm GITHUB_LOGIN_PAT.txt
               rm -r "$TEMP_DIR"
             }
 
@@ -36,6 +37,7 @@ jobs:
             cp -R ./data/docker/. /data/docker/
             cd /data/docker/
 
+            echo $GITHUB_LOGIN_PAT > GITHUB_LOGIN_PAT.txt
             docker-compose pull
             docker-compose up --detach --build --remove-orphans
             docker system prune --force
