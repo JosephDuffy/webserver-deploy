@@ -1,7 +1,7 @@
 [
   {
     "id": "update-josephduffy-co-uk-container",
-    "execute-command": "/etc/webhook/update-container.sh",
+    "execute-command": "/data/docker/update-container.sh",
     "command-working-directory": "/data/docker",
     "pass-arguments-to-command": [
       {
@@ -36,7 +36,7 @@
   },
   {
     "id": "update-contact-josephduffy-co-uk-container",
-    "execute-command": "/etc/webhook/update-container.sh",
+    "execute-command": "/data/docker/update-container.sh",
     "command-working-directory": "/data/docker",
     "pass-arguments-to-command": [
       {
@@ -71,7 +71,7 @@
   },
   {
     "id": "update-magicgoto-container",
-    "execute-command": "/etc/webhook/update-container.sh",
+    "execute-command": "/data/docker/update-container.sh",
     "command-working-directory": "/data/docker",
     "pass-arguments-to-command": [
       {

@@ -23,6 +23,8 @@ services:
       - PGID=1001
     networks:
       - nginx
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/.htpasswd:/etc/nginx/.htpasswd:ro
@@ -96,26 +98,6 @@ services:
     networks:
       - nginx
 
-  webhook:
-    container_name: webhook
-    build: ./webhook
-    restart: unless-stopped
-    networks:
-      - nginx
-    volumes:
-      - ./webhook:/etc/webhook:ro
-      - ./:/data/docker:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - UPDATE_CONTAINER_SECRET
-    secrets:
-     - GITHUB_LOGIN_PAT
-    command:
-      - "-verbose"
-      - "-template" # Enable use `getenv`
-      - "-hooks=/etc/webhook/hooks.json"
-      - "-hotreload"
-
   vapordocc:
     container_name: vapordocc
     image: ghcr.io/josephduffy/vapordocc-website:latest
@@ -185,7 +167,3 @@ services:
 volumes:
   goaccess:
   matomo:
-
-secrets:
-  GITHUB_LOGIN_PAT:
-    file: GITHUB_LOGIN_PAT.txt
