@@ -39,7 +39,8 @@ jobs:
 
             docker volume create --name=caddy_data
             docker-compose pull
-            docker-compose up --detach --build --remove-orphans
+            docker compose build
+            docker-compose up --detach --remove-orphans
             docker system prune --force
 
             if [[ $(docker inspect caddy --format='{{.State.Running}}') == "true" ]]; then
