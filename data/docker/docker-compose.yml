@@ -58,9 +58,9 @@ services:
     networks:
       - caddy
 
-  docc-caddy:
-    container_name: docc-caddy
-    image: ghcr.io/josephduffy/docc-caddy:latest
+  docc-nginx:
+    container_name: docc-nginx
+    image: ghcr.io/josephduffy/docc-nginx:latest
     restart: unless-stopped
     environment:
       - TZ=Europe/London
