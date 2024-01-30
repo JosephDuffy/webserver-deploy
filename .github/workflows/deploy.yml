@@ -41,6 +41,6 @@ jobs:
             docker-compose up --detach --build --remove-orphans
             docker system prune --force
 
-            if [[ $(docker inspect nginx --format='{{.State.Running}}') == "true" ]]; then
+            if [[ $(docker inspect caddy --format='{{.State.Running}}') == "true" ]]; then
               docker exec -w /etc/caddy caddy caddy reload
             fi
