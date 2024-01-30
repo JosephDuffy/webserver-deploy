@@ -1,72 +1,34 @@
-version: "2.1"
+version: "3"
 
 networks:
-  nginx:
+  caddy:
   tor:
   matomo:
 
 services:
-  nginx:
-    container_name: nginx
-    image: nginx:alpine
+  caddy:
+    container_name: caddy
+    build: ./caddy
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"
     depends_on:
-      # - "goaccess"
       - "josephduffy-co-uk"
-      - "magicgoto"
     environment:
       - TZ=Europe/London
       - PUID=1000
       - PGID=1001
+      - CLOUDFLARE_API_KEY
     networks:
-      - nginx
+      - caddy
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/.htpasswd:/etc/nginx/.htpasswd:ro
-      - ./nginx/ffdhe2048.txt:/etc/nginx/ffdhe2048.txt:ro
-      - ./nginx/sites/:/etc/nginx/sites:ro
-      - ./nginx/logs/:/var/log/nginx/
-      - ./nginx/include.d/:/etc/nginx/include.d/:ro
-      - ./nginx/no-access-robots.txt:/var/www/no-access-robots.txt:ro
-      - goaccess:/var/www/real-time-stats/:ro
-      - matomo:/var/www/matomo:ro
-      - ./letsencrypt/etc/letsencrypt:/etc/letsencrypt:ro
-
-  # goaccess:
-  #   container_name: goaccess
-  #   image: allinurl/goaccess:latest
-  #   restart: unless-stopped
-  #   command: /var/log/nginx/access.log -o /var/www/real-time-stats/index.html --log-format=COMBINED --real-time-html --ws-url=wss://stats.josephduffy.co.uk:443/ws --port 7890
-  #   environment:
-  #     - TZ=Europe/London
-  #     - PUID=1000
-  #     - PGID=1001
-  #   networks:
-  #     - nginx
-  #   volumes:
-  #     - ./nginx/logs/:/var/log/nginx/
-  #     - goaccess:/var/www/real-time-stats/
-
-  dnsrobocert:
-    container_name: dnsrobocert
-    image: adferrand/dnsrobocert:latest
-    restart: unless-stopped
-    environment:
-      - TZ=Europe/London
-      - PUID=1000
-      - PGID=1001
-      - LETSENCRYPT_USER_MAIL
-      - LEXICON_CLOUDFLARE_USERNAME
-      - LEXICON_CLOUDFLARE_TOKEN
-    volumes:
-      - ./letsencrypt/etc/letsencrypt:/etc/letsencrypt
-      - ./dnsrobocert/config.yml:/etc/dnsrobocert/config.yml
-      - /var/run/docker.sock:/var/run/docker.sock # to support reloading nginx
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
 
   josephduffy-co-uk:
     container_name: josephduffy-co-uk
@@ -84,19 +46,8 @@ services:
       - MAILGUN_DOMAIN
       - MAILGUN_USERNAME
     networks:
-      - nginx
+      - caddy
       - tor
-
-  magicgoto:
-    container_name: magicgoto
-    image: ghcr.io/josephduffy/magicgoto:latest
-    restart: unless-stopped
-    environment:
-      - TZ=Europe/London
-      - PUID=1000
-      - PGID=1001
-    networks:
-      - nginx
 
   vapordocc:
     container_name: vapordocc
@@ -105,16 +56,16 @@ services:
     environment:
       - TZ=Europe/London
     networks:
-      - nginx
+      - caddy
 
-  docc-nginx:
-    container_name: docc-nginx
-    image: ghcr.io/josephduffy/docc-nginx:latest
+  docc-caddy:
+    container_name: docc-caddy
+    image: ghcr.io/josephduffy/docc-caddy:latest
     restart: unless-stopped
     environment:
       - TZ=Europe/London
     networks:
-      - nginx
+      - caddy
 
   docc-apache:
     container_name: docc-apache
@@ -123,11 +74,11 @@ services:
     environment:
       - TZ=Europe/London
     networks:
-      - nginx
+      - caddy
 
   tor:
     container_name: tor
-    build: ./tor/
+    build: ./tor
     restart: unless-stopped
     ports:
       - "9050:9050"
@@ -144,21 +95,23 @@ services:
     networks:
       - matomo
     volumes:
-      - ./mariadb:/var/lib/mysql
+      - ./mariadb:/var/lib/mysql:Z
     environment:
       - MYSQL_ROOT_PASSWORD=
+      - MARIADB_AUTO_UPGRADE=1
+      - MARIADB_DISABLE_UPGRADE_BACKUP=1
     env_file:
       - ./mariadb.env
 
   matomo:
     container_name: matomo
-    image: matomo:fpm-alpine
+    image: matomo
     restart: always
     networks:
       - matomo
-      - nginx
+      - caddy
     volumes:
-      - matomo:/var/www/matomo
+      - matomo:/var/www/html:z
     environment:
       - MATOMO_DATABASE_HOST=mariadb
     env_file:

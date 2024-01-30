@@ -1,0 +1,31 @@
+*.josephduffy.co.uk:443 {
+	tls {
+		dns cloudflare {env.CLOUDFLARE_API_KEY}
+	}
+
+	encode zstd gzip
+
+	header {
+		-x-powered-by
+		Strict-Transport-Security max-age=31536000; includeSubDomains; preload
+		X-Frame-Options SAMEORIGIN
+		X-XSS-Protection 1; mode=block
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer-when-downgrade
+	}
+
+	@website host josephduffy.co.uk
+	handle @website {
+		reverse_proxy josephduffy-co-uk:3000
+	}
+
+	@subdomains host www.josephduffy.co.uk new.josephduffy.co.uk old.josephduffy.co.uk
+	handle @subdomains {
+		redir https://josephduffy.co.uk{uri}
+	}
+
+	@analytics host analytics.josephduffy.co.uk
+	handle @analytics {
+		reverse_proxy matomo:8080
+	}
+}

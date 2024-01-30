@@ -41,5 +41,5 @@ jobs:
             docker system prune --force
 
             if [[ $(docker inspect nginx --format='{{.State.Running}}') == "true" ]]; then
-              docker exec nginx nginx -s reload
+              docker exec -w /etc/caddy caddy caddy reload
             fi
