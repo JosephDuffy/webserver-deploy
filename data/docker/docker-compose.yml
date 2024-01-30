@@ -120,3 +120,6 @@ services:
 volumes:
   goaccess:
   matomo:
+  caddy_data:
+    external: true
+  caddy_config:
