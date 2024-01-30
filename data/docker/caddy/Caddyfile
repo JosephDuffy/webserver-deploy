@@ -26,6 +26,6 @@
 
 	@analytics host analytics.josephduffy.co.uk
 	handle @analytics {
-		reverse_proxy matomo:8080
+		reverse_proxy matomo:80
 	}
 }
