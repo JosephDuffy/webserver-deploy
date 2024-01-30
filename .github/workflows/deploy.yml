@@ -36,6 +36,7 @@ jobs:
             cp -R ./data/docker/. /data/docker/
             cd /data/docker/
 
+            docker volume create --name=caddy_data
             docker-compose pull
             docker-compose up --detach --build --remove-orphans
             docker system prune --force
