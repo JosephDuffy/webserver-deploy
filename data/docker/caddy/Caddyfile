@@ -163,27 +163,27 @@
 	}
 
 	handle /gathered/ {
-		redit https://josephduffy.co.uk/apps/gathered 301
+		redir https://josephduffy.co.uk/apps/gathered 301
 	}
 
 	handle /gathered/download {
-		redit https://apps.apple.com/app/apple-store/id929726748?pt=96178896&ct=yetii-redirection&mt=8 301
+		redir https://apps.apple.com/app/apple-store/id929726748?pt=96178896&ct=yetii-redirection&mt=8 301
 	}
 
 	handle /gathered/feedback {
-		redit https://josephduffy.co.uk/contact/gathered 301
+		redir https://josephduffy.co.uk/contact/gathered 301
 	}
 
 	handle /gathered/privacy {
-		redit https://josephduffy.co.uk/apps/gathered/privacy 301
+		redir https://josephduffy.co.uk/apps/gathered/privacy 301
 	}
 
 	handle /gathered/changelog {
-		redit https://josephduffy.co.uk/apps/gathered/changelog 301
+		redir https://josephduffy.co.uk/apps/gathered/changelog 301
 	}
 
 	handle /gathered/contact {
-		redit https://josephduffy.co.uk/contact/gathered 301
+		redir https://josephduffy.co.uk/contact/gathered 301
 	}
 
 	handle /scanula/ {
