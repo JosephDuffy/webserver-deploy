@@ -1,3 +1,14 @@
+(redirect-headers) {
+	header {
+		-x-powered-by
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Frame-Options "DENY"
+		X-XSS-Protection "1; mode=block"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer-when-downgrade"
+	}
+}
+
 *.josephduffy.co.uk, josephduffy.co.uk {
 	tls {
 		dns cloudflare {env.CLOUDFLARE_API_KEY}
@@ -7,11 +18,12 @@
 
 	header {
 		-x-powered-by
-		Strict-Transport-Security max-age=31536000; includeSubDomains; preload
-		X-Frame-Options SAMEORIGIN
-		X-XSS-Protection 1; mode=block
-		X-Content-Type-Options nosniff
-		Referrer-Policy no-referrer-when-downgrade
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Frame-Options "SAMEORIGIN"
+		X-XSS-Protection "1; mode=block"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer-when-downgrade"
+		Permissions-Policy "accelerometer=(), ambient-light-sensor=(), autoplay=(), battery=(), camera=(), cross-origin-isolated=(), display-capture=(), document-domain=(), encrypted-media=(), execution-while-not-rendered=(), execution-while-out-of-viewport=(), fullscreen=(), geolocation=(), gyroscope=(), keyboard-map=(), magnetometer=(), microphone=(), midi=(), navigation-override=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), usb=(), web-share=(), xr-spatial-tracking=()"
 	}
 
 	@website host josephduffy.co.uk
@@ -19,13 +31,218 @@
 		reverse_proxy josephduffy-co-uk:3000
 	}
 
+	@website-no-analytics host noanalytics.josephduffy.co.uk
+	handle @website-no-analytics {
+		reverse_proxy josephduffy-co-uk:3000
+		skip_log
+	}
+
+	@contact-api host contact.josephduffy.co.uk
+	handle @website-no-analytics {
+		reverse_proxy josephduffy-co-uk:3000/api
+		skip_log
+	}
+
+	@webhook host webhook.josephduffy.co.uk
+	handle @webhook {
+		reverse_proxy host.docker.internal:9000
+	}
+
 	@subdomains host www.josephduffy.co.uk new.josephduffy.co.uk old.josephduffy.co.uk
 	handle @subdomains {
-		redir https://josephduffy.co.uk{uri}
+		redir https://josephduffy.co.uk{uri} 301
 	}
 
 	@analytics host analytics.josephduffy.co.uk
 	handle @analytics {
 		reverse_proxy matomo:80
+	}
+
+	@docc-apache host docc-apache.josephduffy.co.uk
+	handle @docc-apache {
+		header X-Robots-Tag "noindex, nofollow, nosnippet"
+		reverse_proxy docc-apache:80
+	}
+
+	@docc-nginx host docc-nginx.josephduffy.co.uk
+	handle @docc-nginx {
+		header X-Robots-Tag "noindex, nofollow, nosnippet"
+		reverse_proxy docc-nginx:80
+	}
+
+	@docc-vapor host docc-vapor.josephduffy.co.uk
+	handle @docc-vapor {
+		header X-Robots-Tag "noindex, nofollow, nosnippet"
+
+		handle / {
+			redir https://{host}{uri}/documentation/ 302
+		}
+
+		handle /documentation {
+			redir https://{host}{uri}/documentation/ 302
+		}
+
+		reverse_proxy vapordocc:8080
+	}
+
+	@timetable host timetable.josephduffy.co.uk
+	handle @timetable {
+		redir https://josephduffy.co.uk/projects/timetable-parser 301
+	}
+}
+
+*.bakingfeedback.com, bakingfeedback.com {
+	tls {
+		dns cloudflare {env.CLOUDFLARE_API_KEY}
+	}
+
+	import redirect-headers
+
+	handle {
+		redir https://josephduffy.co.uk/projects/baking-feedback 301
+	}
+}
+
+*.josephduffy.me, josephduffy.me {
+	tls {
+		dns cloudflare {env.CLOUDFLARE_API_KEY}
+	}
+
+	import redirect-headers
+
+	handle /downloads/weblocaliserupdate.safariextz {
+		redir https://josephduffy.co.uk/weblocaliser/weblocaliserupdate.safariextz 301
+	}
+
+	handle {
+		redir https://josephduffy.co.uk{uri} 301
+	}
+}
+
+*.yetii.net, yetii.net {
+	tls {
+		dns cloudflare {env.CLOUDFLARE_API_KEY}
+	}
+
+	import redirect-headers
+
+	handle /apps {
+		redir https://josephduffy.co.uk/apps 301
+	}
+
+	@gathered-contact {
+		query subject=gathered
+		path /contact
+	}
+	handle @gathered-contact {
+		redir https://josephduffy.co.uk/contact/gathered 301
+	}
+
+	@scanula-contact {
+		query subject=scanula
+		path /contact
+	}
+	handle @scanula-contact {
+		redir https://josephduffy.co.uk/contact/scanula 301
+	}
+
+	@four-squares-contact {
+		query subject=four-squares
+		path /contact
+	}
+	handle @four-squares-contact {
+		redir https://josephduffy.co.uk/contact/four-squares 301
+	}
+
+	handle /contact {
+		redir https://josephduffy.co.uk/contact 301
+	}
+
+	handle /sitemap.xml {
+		redir https://josephduffy.co.uk/sitemap.xml 301
+	}
+
+	handle /gathered/ {
+		redit https://josephduffy.co.uk/apps/gathered 301
+	}
+
+	handle /gathered/download {
+		redit https://apps.apple.com/app/apple-store/id929726748?pt=96178896&ct=yetii-redirection&mt=8 301
+	}
+
+	handle /gathered/feedback {
+		redit https://josephduffy.co.uk/contact/gathered 301
+	}
+
+	handle /gathered/privacy {
+		redit https://josephduffy.co.uk/apps/gathered/privacy 301
+	}
+
+	handle /gathered/changelog {
+		redit https://josephduffy.co.uk/apps/gathered/changelog 301
+	}
+
+	handle /gathered/contact {
+		redit https://josephduffy.co.uk/contact/gathered 301
+	}
+
+	handle /scanula/ {
+		redir https://josephduffy.co.uk/apps/scanula 301
+	}
+
+	handle /scanula/download {
+		redir https://apps.apple.com/app/apple-store/id1063048919?pt=96178896&ct=yetii-redirect&mt=8 301
+	}
+
+	handle /scanula/feedback {
+		redir https://josephduffy.co.uk/contact/scanula 301
+	}
+
+	handle /scanula/privacy {
+		redir https://josephduffy.co.uk/apps/scanula/privacy 301
+	}
+
+	handle /scanula/changelog {
+		redir https://josephduffy.co.uk/apps/scanula/changelog 301
+	}
+
+	handle /scanula/press {
+		redir https://josephduffy.co.uk/apps/scanula 301
+	}
+
+	handle /scanula/contact {
+		redir https://josephduffy.co.uk/contact/scanula 301
+	}
+
+	handle /four-squares/ {
+		redir https://josephduffy.co.uk/apps/four-squares 301
+	}
+
+	handle /four-squares/download {
+		redir https://apps.apple.com/app/apple-store/id982796319?pt=96178896&ct=yetii-redirect&mt=8 301
+	}
+
+	handle /four-squares/feedback {
+		redir https://josephduffy.co.uk/contact/four-squares 301
+	}
+
+	handle /four-squares/privacy {
+		redir https://josephduffy.co.uk/apps/four-squares/privacy 301
+	}
+
+	handle /four-squares/changelog {
+		redir https://josephduffy.co.uk/apps/four-squares/changelog 301
+	}
+
+	handle /four-squares/contact {
+		redir https://josephduffy.co.uk/contact/four-squares 301
+	}
+
+	handle /word-art/* {
+		redir https://josephduffy.co.uk/apps/
+	}
+
+	handle {
+		redir https://josephduffy.co.uk/yetii 301
 	}
 }
