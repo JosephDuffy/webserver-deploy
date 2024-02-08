@@ -85,7 +85,7 @@
 		reverse_proxy vapordocc:8080
 	}
 
-	@timetable host timetable.josephduffy.co.uk
+	@timetable host timetable.josephduffy.co.uk timetableparser.josephduffy.co.uk newtimetable.josephduffy.co.uk
 	handle @timetable {
 		redir https://josephduffy.co.uk/projects/timetable-parser 301
 	}
