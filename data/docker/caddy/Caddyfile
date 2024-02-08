@@ -70,7 +70,7 @@
 		reverse_proxy docc-nginx:80
 	}
 
-	@docc-vapor host docc-vapor.josephduffy.co.uk
+	@docc-vapor host vapordocc.josephduffy.co.uk
 	handle @docc-vapor {
 		header X-Robots-Tag "noindex, nofollow, nosnippet"
 
