@@ -9,6 +9,10 @@
 	}
 }
 
+{
+	default_sni josephduffy.co.uk
+}
+
 *.josephduffy.co.uk, josephduffy.co.uk {
 	tls {
 		dns cloudflare {env.CLOUDFLARE_API_KEY}
