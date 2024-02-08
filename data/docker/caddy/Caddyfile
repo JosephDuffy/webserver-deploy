@@ -79,11 +79,11 @@
 		header X-Robots-Tag "noindex, nofollow, nosnippet"
 
 		handle / {
-			redir https://{host}{uri}/documentation/ 302
+			redir https://{host}/documentation/ 302
 		}
 
 		handle /documentation {
-			redir https://{host}{uri}/documentation/ 302
+			redir https://{host}/documentation/ 302
 		}
 
 		reverse_proxy vapordocc:8080
