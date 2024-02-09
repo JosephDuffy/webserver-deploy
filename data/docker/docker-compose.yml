@@ -105,7 +105,7 @@ services:
 
   matomo:
     container_name: matomo
-    image: matomo
+    image: matomo:5
     restart: always
     networks:
       - matomo
