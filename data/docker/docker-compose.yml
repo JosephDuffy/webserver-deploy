@@ -89,7 +89,7 @@ services:
 
   mariadb:
     container_name: mariadb
-    image: mariadb
+    image: mariadb:11
     command: --max-allowed-packet=64MB
     restart: always
     networks:
