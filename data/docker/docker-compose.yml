@@ -26,7 +26,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/conf:/etc/caddy # Don't mount directly at /etc/caddy/Caddyfile to enable graceful reloading.
       - caddy_data:/data
       - caddy_config:/config
 
