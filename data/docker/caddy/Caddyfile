@@ -43,7 +43,8 @@
 
 	@contact-api host contact.josephduffy.co.uk
 	handle @contact-api {
-		reverse_proxy josephduffy-co-uk:3000/api
+		rewrite * /api{uri}
+		reverse_proxy josephduffy-co-uk:3000
 		skip_log
 	}
 
