@@ -1,0 +1,60 @@
+name: Deploy josephduffy.co.uk to Oracle
+
+on:
+  workflow_call:
+    inputs:
+      digest:
+        description: Exact lowercase SHA-256 OCI index digest
+        required: true
+        type: string
+    secrets:
+      TS_CLIENT_ID:
+        required: true
+      TS_AUDIENCE:
+        required: true
+
+concurrency:
+  group: oracle-website-image
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Verify and deploy image
+    runs-on: ubuntu-24.04
+    permissions:
+      attestations: read
+      contents: read
+      id-token: write
+    steps:
+      - name: Authorize the caller repository
+        env:
+          CALLER_REPOSITORY: ${{ github.repository }}
+        run: test "$CALLER_REPOSITORY" = JosephDuffy/josephduffy.co.uk
+
+      - name: Validate and verify the image attestation
+        env:
+          DIGEST: ${{ inputs.digest }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          gh attestation verify \
+            "oci://ghcr.io/josephduffy/josephduffy.co.uk@$DIGEST" \
+            --repo JosephDuffy/josephduffy.co.uk
+
+      - name: Connect to the image deployment identity
+        uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8 # v4.1.2
+        with:
+          oauth-client-id: ${{ secrets.TS_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:webserver-image-deploy
+          version: 1.94.2
+
+      - name: Deploy only the verified digest
+        env:
+          DIGEST: ${{ inputs.digest }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          printf '%s\n' "$GH_TOKEN" | \
+            tailscale ssh webserver-image-deploy@webserver-oracle \
+              "sudo /usr/local/sbin/webserver-image-deploy $DIGEST"

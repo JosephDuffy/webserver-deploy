@@ -1,4 +1,11 @@
 data/docker/letsencrypt/etc/
+# Bootstrap inputs must never enter Git archives or configuration releases.
+oracle/*.env
+!oracle/*.example.env
+oracle/*.key
+!oracle/*.example.key
+oracle/tailscale-auth-key*
+oracle/github-attestation-token*
 data/docker/nginx/legacy/
 data/docker/nginx/logs/
 data/docker/nginx/.htpasswd

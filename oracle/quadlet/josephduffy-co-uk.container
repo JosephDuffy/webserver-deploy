@@ -1,0 +1,39 @@
+[Unit]
+Description=josephduffy.co.uk trial website
+After=network-online.target webserver-network.service webserver-firewall.service
+Wants=network-online.target
+Requires=webserver-network.service webserver-firewall.service
+
+[Container]
+GlobalArgs=--runtime=runc
+Image=localhost/josephduffy-co-uk:production
+Pull=never
+ContainerName=josephduffy-co-uk
+Network=webserver.network
+EnvironmentFile=/etc/webserver/josephduffy-co-uk.env
+ReadOnly=true
+ReadOnlyTmpfs=true
+NoNewPrivileges=true
+DropCapability=all
+User=1001:1001
+Tmpfs=/tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777
+Tmpfs=/app/.next/cache:rw,nosuid,nodev,noexec,size=128m,U,mode=0750
+Tmpfs=/app/.next/server/pages:rw,nosuid,nodev,noexec,size=128m,U,mode=0750
+LogDriver=journald
+PodmanArgs=--memory=768m --cpus=2 --pids-limit=256
+HealthCmd=/usr/local/bin/node -e "fetch('http://'+require('node:os').hostname()+':3000/',{method:'HEAD',redirect:'manual',signal:AbortSignal.timeout(5000)}).then(r=>process.exit(r.status<400?0:1)).catch(()=>process.exit(1))"
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=20s
+HealthOnFailure=kill
+
+[Service]
+Restart=always
+RestartSec=5s
+TimeoutStartSec=120
+TimeoutStopSec=30
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

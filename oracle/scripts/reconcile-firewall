@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+# shellcheck disable=SC1091
+source /usr/local/lib/webserver-deploy-common.sh
+# shellcheck disable=SC1091
+source /usr/local/lib/webserver-deploy-firewall.sh
+
+require_root
+[[ $# -eq 0 ]] || die "usage: webserver-reconcile-firewall"
+
+locked_down=false
+if [[ -f $STATE_DIR/ssh-locked-down ]]; then
+    locked_down=true
+fi
+readonly locked_down
+
+reconcile_webserver_firewall "$locked_down"
+log "managed firewall rules reconciled"

@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+# This installed file is root-owned. Do not source code from the active release:
+# a configuration rollback must not change the security boundary of this command.
+# shellcheck disable=SC1091
+source /usr/local/lib/webserver-deploy-common.sh
+# shellcheck disable=SC1091
+source /usr/local/lib/webserver-deploy-image-transaction.sh
+
+require_root
+[[ $# -eq 1 ]] || die "usage: webserver-image-deploy sha256:<64 lowercase hex characters>"
+validate_digest "$1" || die "invalid image digest"
+readonly digest=$1
+
+require_supported_host
+require_runtime_capabilities
+
+mkdir -p "$STATE_DIR"
+exec 9>"$STATE_DIR/deploy.lock"
+flock --exclusive 9
+
+readonly remote_image="${WEBSITE_IMAGE}@${digest}"
+previous_image_id=''
+previous_digest=''
+rollback_required=false
+
+finish() {
+    local status=$?
+    set +e
+    if [[ $status -ne 0 && $rollback_required == true ]]; then
+        log "image deployment failed; restoring the previous local image"
+        restore_previous_image "$previous_image_id"
+        record_history "image rollback ${digest}"
+    fi
+    exit "$status"
+}
+trap finish EXIT
+
+if podman image exists "$WEBSITE_LOCAL_IMAGE"; then
+    previous_image_id=$(podman image inspect --format '{{.Id}}' "$WEBSITE_LOCAL_IMAGE")
+fi
+if [[ -f $STATE_DIR/current-digest ]]; then
+    previous_digest=$(<"$STATE_DIR/current-digest")
+fi
+
+log "verifying the GitHub attestation for ${digest}"
+verify_attestation_from_stdin "$digest"
+
+log "pulling the exact OCI index digest"
+podman pull "$remote_image"
+[[ $(image_platform "$remote_image") == linux/arm64 ]] ||
+    die "the selected image is not linux/arm64"
+candidate_image_id=$(podman image inspect --format '{{.Id}}' "$remote_image")
+readonly candidate_image_id
+
+podman tag "$remote_image" "$WEBSITE_LOCAL_IMAGE"
+rollback_required=true
+
+if systemctl restart josephduffy-co-uk.service &&
+    wait_for_website_deployment "$candidate_image_id"; then
+    temporary=$(mktemp "$STATE_DIR/current-digest.XXXXXX")
+    printf '%s\n' "$digest" >"$temporary"
+    chmod 0600 "$temporary"
+    if [[ -n $previous_digest ]]; then
+        printf '%s\n' "$previous_digest" >"$STATE_DIR/previous-digest"
+        chmod 0600 "$STATE_DIR/previous-digest"
+    fi
+    mv -f "$temporary" "$STATE_DIR/current-digest"
+    rollback_required=false
+    record_history "image deployed ${digest}" || log "warning: could not append deployment history"
+    log "image deployment succeeded"
+    exit 0
+fi
+
+die "image deployment failed its startup or health check"

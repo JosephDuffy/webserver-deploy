@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+usage() {
+    printf 'Usage: %s RELEASE_DIRECTORY [--static]\n' "$0" >&2
+    exit 2
+}
+
+[[ $# -ge 1 && $# -le 2 ]] || usage
+
+release=$(realpath "$1")
+mode=${2:-full}
+[[ $mode == full || $mode == --static ]] || usage
+[[ -d $release ]] || { printf 'Release directory does not exist: %s\n' "$release" >&2; exit 1; }
+
+required_files=(
+    bootstrap.sh
+    bootstrap-remote.sh
+    Caddyfile
+    lib/bootstrap-support.sh
+    lib/common.sh
+    lib/firewall.sh
+    lib/image-transaction.sh
+    scripts/webserver-image-deploy
+    scripts/webserver-config-deploy
+    scripts/lock-down-ssh
+    scripts/reconcile-firewall
+    host/webserver-firewall.service
+    host/webserver-deploy.sudoers
+    host/sshd_config.transitional
+    host/sshd_config.locked-down
+    quadlet/webserver.network
+    quadlet/caddy-data.volume
+    quadlet/caddy-config.volume
+    quadlet/josephduffy-co-uk.container
+    quadlet/caddy.container
+    josephduffy-co-uk.example.env
+)
+
+for file in "${required_files[@]}"; do
+    [[ -f $release/$file && ! -L $release/$file ]] || { printf 'Missing or unsafe release file: %s\n' "$file" >&2; exit 1; }
+done
+
+if find "$release" -type l -print -quit | grep -q .; then
+    printf 'Release bundles must not contain symbolic links.\n' >&2
+    exit 1
+fi
+
+if find "$release" \( -name '._*' -o -name '.DS_Store' \) -print -quit | grep -q .; then
+    printf 'Release bundles must not contain macOS filesystem metadata.\n' >&2
+    exit 1
+fi
+
+if find "$release" -type f \
+    \( -name 'tailscale-auth-key*' -o -name 'github-attestation-token*' \
+       -o \( -name '*.env' ! -name '*.example.env' \) \
+       -o \( -name '*.key' ! -name '*.example.key' \) \) \
+    -print -quit | grep -q .; then
+    printf 'Release bundles must not contain bootstrap secrets.\n' >&2
+    exit 1
+fi
+
+while IFS= read -r -d '' script; do
+    bash -n "$script"
+done < <(find "$release" -type f \( -name '*.sh' -o -path '*/scripts/*' \) -print0)
+
+if command -v shellcheck >/dev/null 2>&1; then
+    mapfile -d '' shell_files < <(find "$release" -type f \( -name '*.sh' -o -path '*/scripts/*' \) -print0)
+    shellcheck "${shell_files[@]}"
+fi
+
+if command -v visudo >/dev/null 2>&1; then
+    visudo -cf "$release/host/webserver-deploy.sudoers"
+fi
+
+grep -Fq 'Image=localhost/josephduffy-co-uk:production' "$release/quadlet/josephduffy-co-uk.container"
+grep -Fq 'Pull=never' "$release/quadlet/josephduffy-co-uk.container"
+grep -Fq 'GlobalArgs=--runtime=runc' "$release/quadlet/josephduffy-co-uk.container"
+grep -Fq 'GlobalArgs=--runtime=runc' "$release/quadlet/caddy.container"
+grep -Fq 'Subnet=10.89.0.0/24' "$release/quadlet/webserver.network"
+grep -Fq 'Gateway=10.89.0.1' "$release/quadlet/webserver.network"
+grep -Fq 'Requires=webserver-network.service webserver-firewall.service' \
+    "$release/quadlet/josephduffy-co-uk.container"
+grep -Fq 'Tmpfs=/app/.next/server/pages:rw,nosuid,nodev,noexec,size=128m,U,mode=0750' \
+    "$release/quadlet/josephduffy-co-uk.container"
+grep -Fq 'systemctl restart webserver-firewall.service' "$release/bootstrap.sh"
+grep -Fq 'ExecStart=/usr/local/sbin/webserver-reconcile-firewall' \
+    "$release/host/webserver-firewall.service"
+if grep -RqE --exclude-dir=tests --exclude='*.example.*' --exclude=validate-release \
+    'ufw (allow|route|default)|ufw --force enable' "$release"; then
+    printf 'Oracle releases must not add firewall rules through UFW.\n' >&2
+    exit 1
+fi
+grep -Fq 'oracle.josephduffy.co.uk' "$release/Caddyfile"
+
+if [[ $mode == --static ]]; then
+    exit 0
+fi
+
+command -v podman >/dev/null 2>&1 || { printf 'podman is required for full validation\n' >&2; exit 1; }
+command -v runc >/dev/null 2>&1 || { printf 'runc is required for full validation\n' >&2; exit 1; }
+[[ -x /usr/libexec/podman/quadlet ]] || { printf 'Podman Quadlet is required for full validation\n' >&2; exit 1; }
+
+QUADLET_UNIT_DIRS="$release/quadlet" /usr/libexec/podman/quadlet -dryrun >/dev/null
+
+podman pull --quiet docker.io/library/caddy:2.11.4-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648 >/dev/null
+# The liveness command runs inside this image, not on the host.
+podman --runtime=runc run --rm --entrypoint /usr/bin/curl \
+    docker.io/library/caddy:2.11.4-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648 \
+    --version >/dev/null
+podman --runtime=runc run --rm \
+    --entrypoint /usr/bin/caddy \
+    --volume "$release/Caddyfile:/etc/caddy/Caddyfile:ro,Z" \
+    docker.io/library/caddy:2.11.4-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648 \
+    validate --config /etc/caddy/Caddyfile

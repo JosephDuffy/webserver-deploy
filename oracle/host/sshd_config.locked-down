@@ -1,0 +1,9 @@
+# Managed by webserver-deploy after migration. Tailscale SSH owns tailnet port 22; OpenSSH is
+# retained for administrator accounts on tailnet port 2222.
+Port 2222
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+PubkeyAuthentication yes
+# These accounts use Tailscale SSH, never OpenSSH.
+DenyUsers webserver-image-deploy webserver-config-deploy

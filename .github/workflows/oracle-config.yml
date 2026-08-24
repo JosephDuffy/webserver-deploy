@@ -1,0 +1,59 @@
+name: Validate and deploy Oracle configuration
+
+on:
+  push:
+    branches:
+      - feature/oracle-arm
+  workflow_dispatch:
+
+concurrency:
+  group: oracle-configuration
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Oracle release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the configuration
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.0.2
+
+      - name: Install host-compatible validators
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends podman runc shellcheck
+
+      - name: Validate scripts, Caddy, Quadlet, and rollback
+        run: |
+          oracle/scripts/validate-release oracle
+          oracle/tests/test-validation.sh
+          oracle/tests/test-bootstrap.sh
+          node oracle/tests/test-healthchecks.mjs
+
+  deploy:
+    name: Deploy Oracle configuration
+    if: ${{ vars.ORACLE_DEPLOY_ENABLED == 'true' }}
+    needs: validate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Connect to the configuration deployment identity
+        uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8 # v4.1.2
+        with:
+          oauth-client-id: ${{ secrets.TS_CONFIG_CLIENT_ID }}
+          audience: ${{ secrets.TS_CONFIG_AUDIENCE }}
+          tags: tag:webserver-config-deploy
+          version: 1.94.2
+
+      - name: Activate the authenticated commit
+        env:
+          CONFIG_COMMIT: ${{ github.sha }}
+        run: |
+          [[ "$CONFIG_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          tailscale ssh webserver-config-deploy@webserver-oracle \
+            "sudo /usr/local/sbin/webserver-config-deploy $CONFIG_COMMIT"

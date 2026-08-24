@@ -2,6 +2,16 @@
 
 The configuration and automatic deployment of my webserver.
 
+## Oracle ARM trial
+
+The `feature/oracle-arm` branch contains a parallel, clone-free deployment for the
+Oracle ARM server. It provisions Podman Quadlet, Caddy, Tailscale access, restricted
+deployment identities, immutable configuration releases, attested image promotion,
+health checks, and rollback. See [the Oracle deployment guide](oracle/README.md).
+
+The existing Docker Compose deployment remains on `master`; its legacy SSH workflow is
+restricted to pushes to that branch during the trial.
+
 ## Server setup
 
 The server will need Docker and Docker Compose installed.

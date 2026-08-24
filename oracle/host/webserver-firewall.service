@@ -1,0 +1,14 @@
+[Unit]
+Description=Webserver host firewall
+Wants=network-online.target
+After=network-online.target tailscaled.service webserver-network.service
+Requires=webserver-network.service
+Before=josephduffy-co-uk.service caddy.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/webserver-reconcile-firewall
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

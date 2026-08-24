@@ -1,0 +1,6 @@
+[Unit]
+Description=Caddy certificate data
+
+[Volume]
+VolumeName=webserver-caddy-data
+Label=io.containers.autoupdate=disabled

@@ -1,0 +1,140 @@
+// Merge these entries into the tailnet policy. Replace you@example.com with the person who may
+// administer the host, and other@example.com with a real non-administrator tailnet member. Remove
+// any existing allow-all grants; grants are additive, so it would bypass this isolation.
+{
+	"groups": {
+		"group:webserver-admin": ["you@example.com"],
+	},
+
+	"tagOwners": {
+		"tag:webserver": ["group:webserver-admin"],
+		"tag:webserver-image-deploy": [],
+		"tag:webserver-config-deploy": [],
+	},
+
+	"grants": [
+		// Preserve unrestricted access between user-owned devices, including across users. Tagged
+		// infrastructure and workflow nodes do not inherit this access.
+		{
+			"src": ["autogroup:member"],
+			"dst": ["autogroup:member"],
+			"ip":  ["*"],
+		},
+		// Preserve exit-node access for all tailnet members. Access to an exit-node device and
+		// permission to route internet traffic through it are separate grants.
+		{
+			"src": ["autogroup:member"],
+			"dst": ["autogroup:internet"],
+			"ip":  ["*"],
+		},
+		{
+			"src": ["tag:webserver-image-deploy"],
+			"dst": ["tag:webserver"],
+			"ip": ["tcp:22"],
+		},
+		{
+			"src": ["tag:webserver-config-deploy"],
+			"dst": ["tag:webserver"],
+			"ip": ["tcp:22"],
+		},
+		{
+			"src": ["group:webserver-admin"],
+			"dst": ["tag:webserver"],
+			"ip": ["tcp:2222"],
+		},
+	],
+
+	"ssh": [
+		{
+			"action": "accept",
+			"src": ["tag:webserver-image-deploy"],
+			"dst": ["tag:webserver"],
+			"users": ["webserver-image-deploy"],
+		},
+		{
+			"action": "accept",
+			"src": ["tag:webserver-config-deploy"],
+			"dst": ["tag:webserver"],
+			"users": ["webserver-config-deploy"],
+		},
+	],
+
+	// Policy tests run when the policy changes. The documentation-only address below represents a
+	// public destination reached through an exit node; it is not contacted by the test.
+	"tests": [
+		{
+			"src": "tag:webserver-image-deploy",
+			"proto": "tcp",
+			"accept": ["tag:webserver:22"],
+			"deny": [
+				"tag:webserver:80",
+				"tag:webserver:443",
+				"tag:webserver:2222",
+				"tag:webserver:3000",
+				"you@example.com:22",
+			],
+		},
+		{
+			"src": "tag:webserver-config-deploy",
+			"proto": "tcp",
+			"accept": ["tag:webserver:22"],
+			"deny": [
+				"tag:webserver:80",
+				"tag:webserver:443",
+				"tag:webserver:2222",
+				"tag:webserver:3000",
+				"you@example.com:22",
+			],
+		},
+		{
+			"src": "you@example.com",
+			"proto": "tcp",
+			"accept": ["tag:webserver:2222"],
+			"deny": [
+				"tag:webserver:22",
+				"tag:webserver:80",
+				"tag:webserver:443",
+				"tag:webserver:3000",
+			],
+		},
+		{
+			"src": "other@example.com",
+			"proto": "tcp",
+			"accept": ["you@example.com:22"],
+			"deny": [
+				"tag:webserver:22",
+				"tag:webserver:80",
+				"tag:webserver:443",
+				"tag:webserver:2222",
+				"tag:webserver:3000",
+			],
+		},
+	],
+
+	// Administrative access uses ordinary OpenSSH on port 2222. These tests intentionally ensure
+	// that personal identities cannot instead use Tailscale SSH on port 22.
+	"sshTests": [
+		{
+			"src": "tag:webserver-image-deploy",
+			"dst": ["tag:webserver"],
+			"accept": ["webserver-image-deploy"],
+			"deny": ["webserver-config-deploy", "root"],
+		},
+		{
+			"src": "tag:webserver-config-deploy",
+			"dst": ["tag:webserver"],
+			"accept": ["webserver-config-deploy"],
+			"deny": ["webserver-image-deploy", "root"],
+		},
+		{
+			"src": "you@example.com",
+			"dst": ["tag:webserver"],
+			"deny": ["webserver-image-deploy", "webserver-config-deploy", "root"],
+		},
+		{
+			"src": "other@example.com",
+			"dst": ["tag:webserver"],
+			"deny": ["webserver-image-deploy", "webserver-config-deploy", "root"],
+		},
+	],
+}

@@ -1,0 +1,6 @@
+[Unit]
+Description=Caddy runtime configuration
+
+[Volume]
+VolumeName=webserver-caddy-config
+Label=io.containers.autoupdate=disabled
