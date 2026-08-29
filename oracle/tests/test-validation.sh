@@ -57,7 +57,8 @@ if validate_commit '0123456789abcdef0123456789abcdef01234567' extra; then
 fi
 
 health_calls=()
-# shellcheck disable=SC2329
+# These test doubles are called indirectly by functions in the sourced libraries.
+# shellcheck disable=SC2317,SC2329
 podman() {
     health_calls+=("podman $*")
     case "$*" in
@@ -90,9 +91,12 @@ https_call=${health_calls[2]}
     fail 'HTTPS health did not make a local end-to-end HEAD request'
 
 calls=()
-# shellcheck disable=SC2329
+# These test doubles are called indirectly by restore_previous_image.
+# shellcheck disable=SC2317,SC2329
 podman() { calls+=("podman $*"); }
+# shellcheck disable=SC2317,SC2329
 systemctl() { calls+=("systemctl $*"); }
+# shellcheck disable=SC2317,SC2329
 wait_for_website_deployment() { calls+=("wait_for_website_deployment $*"); return 1; }
 
 restore_previous_image 'sha256:previous-image-id'
