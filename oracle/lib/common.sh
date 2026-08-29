@@ -121,7 +121,7 @@ record_history() {
 verify_attestation() (
     set +x
     [[ $# -ge 1 && $# -le 2 ]] || die "verify_attestation requires a digest and optional token file"
-    local digest=$1
+    local attestation_digest=$1
     local token_file=${2:-}
     local token
 
@@ -136,7 +136,7 @@ verify_attestation() (
         die "GitHub attestation verification requires a single-line token"
 
     GH_TOKEN=$token GH_PROMPT_DISABLED=1 \
-        gh attestation verify "oci://${WEBSITE_IMAGE}@${digest}" --repo "$WEBSITE_REPOSITORY"
+        gh attestation verify "oci://${WEBSITE_IMAGE}@${attestation_digest}" --repo "$WEBSITE_REPOSITORY"
 )
 
 verify_attestation_from_stdin() (

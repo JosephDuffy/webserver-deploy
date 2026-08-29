@@ -131,6 +131,12 @@ grep -q '^attestation verify oci://' "$fixture_root/gh-call" || fail 'attestatio
 printf 'github_pat_test_attestation_token\n' |
     verify_attestation_from_stdin \
         'sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+# Bash locals use dynamic scope. The image command's readonly digest must not collide with a local
+# variable inside the shared attestation verifier.
+(
+    readonly digest='sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+    printf 'github_pat_test_attestation_token\n' | verify_attestation_from_stdin "$digest"
+)
 must_fail verify_attestation \
     'sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' \
     "$fixture_root/missing-token"
