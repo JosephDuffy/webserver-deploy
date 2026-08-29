@@ -3,7 +3,7 @@ name: Validate and deploy Oracle configuration
 on:
   push:
     branches:
-      - feature/oracle-arm
+      - master
   workflow_dispatch:
 
 concurrency:

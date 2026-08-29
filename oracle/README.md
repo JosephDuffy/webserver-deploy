@@ -56,10 +56,10 @@ identities rather than OAuth clients; no client secret is generated.
 
 Create the configuration deployment identity with:
 
-- Subject: `repo:JosephDuffy/webserver-deploy:ref:refs/heads/feature/oracle-arm`
+- Subject: `repo:JosephDuffy/webserver-deploy:ref:refs/heads/master`
 - Custom claim: `workflow_ref`
 - Custom claim value:
-  `JosephDuffy/webserver-deploy/.github/workflows/oracle-config.yml@refs/heads/feature/oracle-arm`
+  `JosephDuffy/webserver-deploy/.github/workflows/oracle-config.yml@refs/heads/master`
 - Scope: `auth_keys` write only
 - Tag: `tag:webserver-config-deploy`
 
