@@ -1,8 +1,8 @@
 # ARM Deployment
 
-This bundle provisions a website-only Ubuntu 24.04 ARM64 host. It uses rootful Podman Quadlets, a
-pinned Caddy image, an attested website image, and two single-purpose deployment identities. Routine
-deployments do not clone this repository and do not install host packages.
+This bundle provisions a web-only Ubuntu 24.04 ARM64 host. It uses rootful Podman Quadlets, a
+pinned Caddy image, allow-listed attested application images, and two single-purpose deployment
+identities. Routine deployments do not clone this repository and do not install host packages.
 
 ## Trust Boundaries
 
@@ -11,8 +11,9 @@ deployments do not clone this repository and do not install host packages.
 - Both accounts have locked passwords, empty `authorized_keys`, no supplementary groups, and no
   general sudo access. OpenSSH explicitly denies these accounts; Tailscale SSH authorizes them
   separately. Other administrator accounts are not hard-coded in this bundle.
-- The image command accepts only `sha256:<64 lowercase hex>` and always uses the fixed
-  josephduffy.co.uk image, service, hostname, and health endpoint.
+- The image command accepts only an allow-listed target and `sha256:<64 lowercase hex>`. Each
+  target maps to a fixed repository, image, local tag, service, hostname, environment file, and
+  health endpoint in the root-owned deployment library.
 - The configuration command accepts only a 40-character lowercase commit and downloads only that
   immutable public GitHub archive.
 - The server is administered through a separate account, authenticated with a personal SSH key
@@ -36,6 +37,15 @@ Prepare the ignored local environment file and fill in the real values:
 ```bash
 cp oracle/josephduffy-co-uk.example.env oracle/josephduffy-co-uk.env
 chmod 600 oracle/josephduffy-co-uk.env
+```
+
+The Swift service does not start until its first image deployment. If it needs environment values,
+prepare its ignored file before that deployment; a nonempty comment-only file is sufficient when
+the application does not currently need any variables:
+
+```bash
+cp oracle/josephduffy-co-uk-swift.example.env oracle/josephduffy-co-uk-swift.env
+chmod 600 oracle/josephduffy-co-uk-swift.env
 ```
 
 Create a short-lived, one-off, non-ephemeral Tailscale auth key authorized for `tag:webserver` and
@@ -72,14 +82,22 @@ Create the image deployment identity with:
   `repo:JosephDuffy/josephduffy.co.uk:ref:refs/heads/<deployment-branch>`
 - Custom claim: `job_workflow_ref`
 - Custom claim value:
-  `JosephDuffy/webserver-deploy/.github/workflows/deploy-image.yml@<exact-commit-sha>`
+  `JosephDuffy/webserver-deploy/.github/workflows/deploy-image.yml@refs/heads/master`
 - Scope: `auth_keys` write only
 - Tag: `tag:webserver-image-deploy`
 
 Replace `<deployment-branch>` with the branch in the website repository that calls the reusable
-workflow. Replace `<exact-commit-sha>` with the full commit SHA used in that workflow's `uses`
-reference. Store this identity's Client ID and Audience in the website repository's GitHub Actions
-secrets as `TS_CLIENT_ID` and `TS_AUDIENCE`.
+workflow. Generate the credential and copy its Client ID and Audience; no client secret or auth key
+is generated. In the `JosephDuffy/josephduffy.co.uk` repository, open **Settings**, **Secrets and
+variables**, **Actions**, and create these repository secrets:
+
+- `TS_CLIENT_ID`: the generated Client ID.
+- `TS_AUDIENCE`: the generated Audience.
+
+The values identify the federated trust relationship rather than granting access by themselves,
+but storing them as GitHub Actions secrets keeps them out of logs and matches the reusable
+workflow's interface. The caller uses `@master`, while GitHub records the expanded
+`@refs/heads/master` value in `job_workflow_ref`.
 
 The configuration workflow is a normal workflow, so it is restricted by `workflow_ref`. The image
 deployment runs through a reusable workflow, so it is additionally restricted by
@@ -137,7 +155,9 @@ read-only.
 Bootstrap fails before package installation if an environment file is not on the device performing
 the bootstrap or on the web server at `/etc/webserver/josephduffy-co-uk.env`. The example is never
 installed. An existing server file takes precedence over the uploaded copy and is preserved as
-root-owned mode `0600`. Persistent volumes, image state, and deployment history are also preserved.
+root-owned mode `0600`. The Swift environment is optional until its first image deployment and is
+handled with the same preserve-existing behavior. Persistent volumes, per-target image state, and
+deployment history are also preserved.
 
 For manual bootstrap from an extracted bundle, the equivalent server-side interface is:
 
@@ -146,21 +166,120 @@ sudo bash ./oracle/bootstrap.sh \
   '<40-character-commit>' \
   /secure/path/server-tailscale.key \
   /secure/path/josephduffy-co-uk.env \
-  /secure/path/github-attestation-token
+  /secure/path/github-attestation-token \
+  /secure/path/josephduffy-co-uk-swift.env
 ```
 
-The optional arguments supply the Tailscale key, website environment, and one-off GitHub token.
-They default to files in `oracle/` and can be absent when their corresponding state already exists.
-For later website secret edits:
+The optional arguments supply the Tailscale key, primary website environment, one-off GitHub token,
+and Swift environment. They default to files in `oracle/` and can be absent when their corresponding
+state already exists. For later secret edits:
 
 ```bash
 sudoedit /etc/webserver/josephduffy-co-uk.env
 sudo systemctl restart josephduffy-co-uk.service
+
+sudoedit /etc/webserver/josephduffy-co-uk-swift.env
+sudo systemctl restart josephduffy-co-uk-swift.service
 ```
 
 Set the repository variable `ORACLE_DEPLOY_ENABLED` to `true` only after bootstrap and Tailscale
 policy testing. Missing, empty, or any other value leaves the configuration workflow in
 validation-only mode.
+
+## Reusable image deployment
+
+The public `deploy-image.yml` workflow accepts an opaque allow-listed `target` and the exact
+`sha256:` digest emitted by that target's image build. The target defaults to
+`josephduffy-co-uk`, so existing callers that pass only `digest` continue to work. It accepts calls
+only from `JosephDuffy/josephduffy.co.uk`, verifies the selected image's attestation before joining
+the tailnet, and passes only the validated target and digest to the fixed server-side command.
+
+The available targets are:
+
+| Target | Attested OCI image | Public hostname |
+| --- | --- | --- |
+| `josephduffy-co-uk` | `ghcr.io/josephduffy/josephduffy.co.uk` | `oracle.josephduffy.co.uk` |
+| `josephduffy-co-uk-swift` | `ghcr.io/josephduffy/josephduffy-co-uk-swift` | `swift.josephduffy.co.uk` |
+
+In the website repository, expose the digest from the existing build job. The build step must have
+an `id`; this example assumes it is named `build`:
+
+```yaml
+jobs:
+  build_image:
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      # Existing checkout, login, metadata, and setup steps.
+      - name: Build and push the image
+        id: build
+        uses: docker/build-push-action@<pinned-action-commit>
+        with:
+          # Existing multi-platform build and push configuration.
+```
+
+Add a dependent job that calls the reusable workflow. Pass only the build output and the two
+federated identity values created above:
+
+```yaml
+  deploy_oracle:
+    name: Deploy to Oracle
+    needs: build_image
+    permissions:
+      attestations: read
+      contents: read
+      id-token: write
+    uses: JosephDuffy/webserver-deploy/.github/workflows/deploy-image.yml@master
+    with:
+      target: josephduffy-co-uk
+      digest: ${{ needs.build_image.outputs.digest }}
+    secrets:
+      TS_CLIENT_ID: ${{ secrets.TS_CLIENT_ID }}
+      TS_AUDIENCE: ${{ secrets.TS_AUDIENCE }}
+```
+
+The caller permissions are required because permissions can only be maintained or reduced across a
+reusable-workflow call. `attestations: read` verifies the image provenance, and `id-token: write`
+allows the Tailscale client to request the short-lived GitHub OIDC token. The workflow does not need
+a Tailscale client secret or reusable auth key.
+
+Both targets are built by the same repository and call the same reusable workflow, so they use the
+same `TS_CLIENT_ID` and `TS_AUDIENCE` credential pair.
+
+Use the same pattern for the Swift build, changing only the build dependency and target:
+
+```yaml
+  deploy_swift_oracle:
+    name: Deploy Swift server to Oracle
+    needs: build_swift_image
+    permissions:
+      attestations: read
+      contents: read
+      id-token: write
+    uses: JosephDuffy/webserver-deploy/.github/workflows/deploy-image.yml@master
+    with:
+      target: josephduffy-co-uk-swift
+      digest: ${{ needs.build_swift_image.outputs.digest }}
+    secrets:
+      TS_CLIENT_ID: ${{ secrets.TS_CLIENT_ID }}
+      TS_AUDIENCE: ${{ secrets.TS_AUDIENCE }}
+```
+
+The Swift image contract is `linux/arm64`, UID/GID `1001:1001`, HTTP on port `8080`, and a bundled
+`/usr/bin/curl` capable of making the container's `HEAD /` health request. Its root filesystem is
+read-only apart from a bounded `/tmp` tmpfs. Before its first deployment, install the environment
+file and create a DNS-only A record for `swift.josephduffy.co.uk` pointing to the server. The first
+deployment enables the service only after the image is pulled and verified; a failed first
+deployment removes that enable marker again.
+
+The `master` reference is intentionally a moving deployment channel. Protect `master` in this
+repository with required pull-request review and status checks, restricted direct pushes, and force
+pushes and branch deletion disabled. A caller will use newly accepted workflow changes on its next
+run without changing its own workflow file.
+
+During the Oracle trial this job can run alongside the existing webhook deployment. Both jobs use
+the same multi-platform OCI index digest, while each server pulls the image matching its own
+architecture.
 
 ## SSH lock-down
 
@@ -172,8 +291,9 @@ and the tailnet hostname:
 ssh -p 2222 webserver-admin
 ```
 
-Test each deployment account from its respective workflow identity (not a personal Tailscale
-identity, which the example policy does not authorize for these accounts):
+Confirm both deployment workflows succeed. The workload identities used by GitHub Actions are the
+only identities authorized to use the deployment Unix accounts; the following commands are not
+expected to work from a personal Tailscale node:
 
 ```bash
 tailscale ssh webserver-image-deploy@webserver-oracle
@@ -184,7 +304,7 @@ Also open and test an Oracle serial-console session. Then run the script to lock
 configuration, acknowledging that the above checks have been performed:
 
 ```bash
-sudo webserver-lock-down-ssh \
+sudo /opt/webserver/current/scripts/lock-down-ssh \
   --admin-tested \
   --workflows-tested \
   --serial-console-tested
@@ -198,25 +318,32 @@ deployment accounts out of OpenSSH even if keys are added later. Existing host
 
 ## Health Checks
 
-- The website container sends a local `HEAD /` request with a five-second timeout. It checks the
-  homepage route without downloading a response body; the server may still render that page.
+- Each application container sends a local `HEAD /` request with a five-second timeout. The Next.js
+  image uses Node and the Swift image uses its bundled `curl`; both check the homepage route without
+  downloading a response body.
 - Caddy checks `GET http://localhost:2019/config/` with its bundled `curl`. Its admin listener is
   bound only to container loopback, and port 2019 is not published or available to the website
   container. The liveness probe itself does not depend on website availability.
-- Deployment success also requires an HTTPS `HEAD /` check through Caddy, including certificate
-  verification and proxying to the website. A healthy admin API alone would not prove TLS or
-  routing works.
+- Deployment success also requires an HTTPS `HEAD /` check through Caddy for the selected target,
+  including certificate verification and proxying to that application. A healthy admin API alone
+  would not prove TLS or routing works.
+
+The host has two vCPUs and 12 GB RAM. Caddy has a 512 MB memory limit and the default CPU share
+weight of 1024. Next.js has a 2 GB limit and the Swift service has a 4 GB limit; both have a lower
+CPU share weight of 512. CPU shares are relative priority only when the host is contended, not a
+core-count ceiling, so either application may use both cores when capacity is available.
 
 ## Operation and rollback
 
 Configuration releases are stored at `/opt/webserver/releases/<commit>` and activated through
-`/opt/webserver/current`. Image state and history remain under `/var/lib/webserver-deploy`. Both
-deployment commands use a shared lock.
+`/opt/webserver/current`. Per-target image state is stored under
+`/var/lib/webserver-deploy/images/<target>`, while shared history remains at
+`/var/lib/webserver-deploy/history.log`. Both deployment commands use a shared lock.
 
-An image deployment verifies GitHub provenance on both the runner and server, pulls the exact OCI
-index digest, verifies that Podman selected ARM64, retags it locally as `production`, confirms the
-container is running that immutable image ID, runs the container's configured health check,
-and checks `https://oracle.josephduffy.co.uk/`. Failure restores the prior local image.
+An image deployment verifies GitHub provenance on both the runner and server, pulls the target's
+exact OCI index digest, verifies that Podman selected ARM64, retags it locally as `production`,
+confirms the target container is running that immutable image ID, runs its configured health check,
+and checks its public HTTPS hostname. Failure restores only that target's prior local image.
 The reusable workflow requires the caller to grant `attestations: read`; it sends that job's
 short-lived GitHub token to the fixed deployment command over SSH standard input. The token is used
 only by `gh attestation verify` and is never stored on the server.
@@ -229,10 +356,13 @@ Useful checks:
 
 ```bash
 sudo systemctl status josephduffy-co-uk.service caddy.service
+sudo systemctl status josephduffy-co-uk-swift.service
 sudo podman image inspect --format '{{.Os}}/{{.Architecture}}' localhost/josephduffy-co-uk:production
+sudo podman image inspect --format '{{.Os}}/{{.Architecture}}' localhost/josephduffy-co-uk-swift:production
 sudo podman image inspect --format '{{.Os}}/{{.Architecture}}' docker.io/library/caddy:2.11.4-alpine
 sudo tail -n 50 /var/lib/webserver-deploy/history.log
 curl --head --fail https://oracle.josephduffy.co.uk/
+curl --head --fail https://swift.josephduffy.co.uk/
 ```
 
 [oracle-platform-images]: https://docs.oracle.com/iaas/Content/Compute/References/images.htm

@@ -4,7 +4,6 @@ set -Eeuo pipefail
 
 # shellcheck disable=SC1091
 source /usr/local/lib/webserver-deploy-common.sh
-
 require_root
 [[ $# -eq 1 ]] || die "usage: webserver-config-deploy <40 lowercase hex commit>"
 validate_commit "$1" || die "invalid configuration commit"
@@ -12,17 +11,54 @@ readonly commit=$1
 
 require_supported_host
 require_runtime_capabilities
-[[ -f $ENV_FILE && -s $ENV_FILE && ! -L $ENV_FILE ]] ||
-    die "missing josephduffy-co-uk.env; bootstrap update required"
 
 mkdir -p "$STATE_DIR" "$RELEASE_ROOT"
 exec 9>"$STATE_DIR/deploy.lock"
 flock --exclusive 9
+migrate_legacy_image_state
+
+enabled_targets=()
+declare -A target_image_ids=()
+declare -A target_changed=()
+while IFS= read -r deployment_target_name; do
+    load_deployment_target "$deployment_target_name"
+    deployment_target_is_enabled || continue
+    [[ -f $DEPLOY_ENV_FILE && -s $DEPLOY_ENV_FILE && ! -L $DEPLOY_ENV_FILE ]] ||
+        die "missing environment for enabled target ${deployment_target_name}"
+    podman image exists "$DEPLOY_LOCAL_IMAGE" ||
+        die "no promoted image exists for enabled target ${deployment_target_name}"
+    enabled_targets+=("$deployment_target_name")
+    target_image_ids["$deployment_target_name"]=$(
+        podman image inspect --format '{{.Id}}' "$DEPLOY_LOCAL_IMAGE"
+    )
+done < <(deployment_targets)
 
 temporary_root=$(mktemp -d)
 release_staging=''
 previous=''
 rollback_required=false
+restart_all_enabled_services() {
+    local enabled_target_name
+    for enabled_target_name in "${enabled_targets[@]}"; do
+        load_deployment_target "$enabled_target_name"
+        systemctl restart "$DEPLOY_SERVICE"
+    done
+    systemctl restart caddy.service
+}
+wait_for_enabled_stack_health() {
+    local health_attempts=${1:-30}
+    local health_delay=${2:-5}
+    local enabled_target_name
+
+    for enabled_target_name in "${enabled_targets[@]}"; do
+        load_deployment_target "$enabled_target_name"
+        wait_for_target_deployment \
+            "$DEPLOY_CONTAINER" "$DEPLOY_HOSTNAME" "$DEPLOY_HEALTH_PATH" \
+            "${target_image_ids[$enabled_target_name]}" "$health_attempts" "$health_delay" ||
+            return 1
+    done
+    wait_for_container_health caddy "$health_attempts" "$health_delay"
+}
 cleanup_temporary_files() {
     rm -rf "$temporary_root"
     if [[ -n $release_staging ]]; then
@@ -37,12 +73,16 @@ finish() {
         log "configuration failed; restoring the previous release"
         if [[ -n $previous && -d $previous ]]; then
             activate_release "$previous"
-            systemctl restart josephduffy-co-uk.service
-            systemctl restart caddy.service
-            wait_for_stack_health "$website_image_id" 12 5
+            restart_all_enabled_services
+            wait_for_enabled_stack_health 12 5
             record_history "configuration rollback ${commit}"
         else
-            systemctl stop caddy.service josephduffy-co-uk.service
+            systemctl stop caddy.service
+            local enabled_target_name
+            for enabled_target_name in "${enabled_targets[@]}"; do
+                load_deployment_target "$enabled_target_name"
+                systemctl stop "$DEPLOY_SERVICE"
+            done
         fi
     fi
     exit "$status"
@@ -81,23 +121,29 @@ if [[ -L $CURRENT_RELEASE ]]; then
     previous=$(readlink -f "$CURRENT_RELEASE")
 fi
 
-website_changed=true
 caddy_changed=true
+for deployment_target_name in "${enabled_targets[@]}"; do
+    target_changed["$deployment_target_name"]=true
+done
 if [[ -n $previous && -d $previous ]]; then
-    website_changed=false
     caddy_changed=false
-    cmp -s "$previous/quadlet/josephduffy-co-uk.container" "$target/quadlet/josephduffy-co-uk.container" || website_changed=true
-    cmp -s "$previous/quadlet/webserver.network" "$target/quadlet/webserver.network" || { website_changed=true; caddy_changed=true; }
+    for deployment_target_name in "${enabled_targets[@]}"; do
+        load_deployment_target "$deployment_target_name"
+        target_changed["$deployment_target_name"]=false
+        cmp -s "$previous/quadlet/$DEPLOY_QUADLET" "$target/quadlet/$DEPLOY_QUADLET" ||
+            target_changed["$deployment_target_name"]=true
+    done
+    if ! cmp -s "$previous/quadlet/webserver.network" "$target/quadlet/webserver.network"; then
+        for deployment_target_name in "${enabled_targets[@]}"; do
+            target_changed["$deployment_target_name"]=true
+        done
+        caddy_changed=true
+    fi
     cmp -s "$previous/quadlet/caddy.container" "$target/quadlet/caddy.container" || caddy_changed=true
     cmp -s "$previous/quadlet/caddy-data.volume" "$target/quadlet/caddy-data.volume" || caddy_changed=true
     cmp -s "$previous/quadlet/caddy-config.volume" "$target/quadlet/caddy-config.volume" || caddy_changed=true
     cmp -s "$previous/Caddyfile" "$target/Caddyfile" || caddy_changed=true
 fi
-
-podman image exists "$WEBSITE_LOCAL_IMAGE" ||
-    die "no promoted website image exists; bootstrap update required"
-website_image_id=$(podman image inspect --format '{{.Id}}' "$WEBSITE_LOCAL_IMAGE")
-readonly website_image_id
 
 activate_release() {
     local release=$1
@@ -108,11 +154,15 @@ activate_release() {
 }
 
 restart_changed_services() {
-    if [[ $website_changed == true ]]; then
-        systemctl restart josephduffy-co-uk.service
-    else
-        systemctl start josephduffy-co-uk.service
-    fi
+    local enabled_target_name
+    for enabled_target_name in "${enabled_targets[@]}"; do
+        load_deployment_target "$enabled_target_name"
+        if [[ ${target_changed[$enabled_target_name]} == true ]]; then
+            systemctl restart "$DEPLOY_SERVICE"
+        else
+            systemctl start "$DEPLOY_SERVICE"
+        fi
+    done
     if [[ $caddy_changed == true ]]; then
         systemctl restart caddy.service
     else
@@ -122,7 +172,7 @@ restart_changed_services() {
 
 rollback_required=true
 activate_release "$target"
-if restart_changed_services && wait_for_stack_health "$website_image_id"; then
+if restart_changed_services && wait_for_enabled_stack_health; then
     printf '%s\n' "$commit" >"$STATE_DIR/current-config-commit"
     chmod 0600 "$STATE_DIR/current-config-commit"
     record_history "configuration deployed ${commit}"

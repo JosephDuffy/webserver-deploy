@@ -37,10 +37,25 @@ grep -qx 'TEST_SECRET=local' "$destination" || fail 'rerun overwrote server secr
 ln -s "$destination" "$fixture_root/unsafe.env"
 must_fail select_bootstrap_environment "$fixture_root/unsafe.env" "$supplied"
 
+optional_destination="$fixture_root/server/josephduffy-co-uk-swift.env"
+optional_supplied="$fixture_root/input/josephduffy-co-uk-swift.env"
+install_optional_bootstrap_environment "$optional_destination" "$optional_supplied"
+[[ ! -e $optional_destination ]] || fail 'absent optional environment created an empty server file'
+printf 'SWIFT_SECRET=local\n' >"$optional_supplied"
+install_optional_bootstrap_environment "$optional_destination" "$optional_supplied"
+cmp -s "$optional_supplied" "$optional_destination" ||
+    fail 'optional Swift environment was not installed'
+printf 'SWIFT_SECRET=changed-local\n' >"$optional_supplied"
+install_optional_bootstrap_environment "$optional_destination" "$optional_supplied"
+grep -qx 'SWIFT_SECRET=local' "$optional_destination" ||
+    fail 'rerun overwrote the optional server environment'
+
 mkdir "$fixture_root/source" "$fixture_root/release"
 copy_bootstrap_release "$oracle_dir" "$fixture_root/source"
 [[ -f $fixture_root/source/josephduffy-co-uk.example.env ]] ||
     fail 'release omitted environment example'
+[[ -f $fixture_root/source/josephduffy-co-uk-swift.example.env ]] ||
+    fail 'release omitted Swift environment example'
 printf 'secret' >"$fixture_root/source/josephduffy-co-uk.env"
 printf 'secret' >"$fixture_root/source/tailscale-auth-key"
 printf 'secret' >"$fixture_root/source/github-attestation-token"
@@ -125,23 +140,35 @@ gh() {
 }
 printf 'github_pat_test_attestation_token\n' >"$fixture_root/github-token"
 verify_attestation \
+    'JosephDuffy/josephduffy.co.uk' \
+    'ghcr.io/josephduffy/josephduffy.co.uk' \
     'sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' \
     "$fixture_root/github-token"
 grep -q '^attestation verify oci://' "$fixture_root/gh-call" || fail 'attestation was not verified'
 printf 'github_pat_test_attestation_token\n' |
     verify_attestation_from_stdin \
+        'JosephDuffy/josephduffy.co.uk' \
+        'ghcr.io/josephduffy/josephduffy.co.uk' \
         'sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 # Bash locals use dynamic scope. The image command's readonly digest must not collide with a local
 # variable inside the shared attestation verifier.
 (
     readonly digest='sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
-    printf 'github_pat_test_attestation_token\n' | verify_attestation_from_stdin "$digest"
+    printf 'github_pat_test_attestation_token\n' |
+        verify_attestation_from_stdin \
+            'JosephDuffy/josephduffy.co.uk' \
+            'ghcr.io/josephduffy/josephduffy.co.uk' \
+            "$digest"
 )
 must_fail verify_attestation \
+    'JosephDuffy/josephduffy.co.uk' \
+    'ghcr.io/josephduffy/josephduffy.co.uk' \
     'sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' \
     "$fixture_root/missing-token"
 printf 'first\nsecond\n' |
     must_fail verify_attestation_from_stdin \
+        'JosephDuffy/josephduffy.co.uk' \
+        'ghcr.io/josephduffy/josephduffy.co.uk' \
         'sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 unset -f gh
 
@@ -239,6 +266,7 @@ export TMPDIR="$fixture_root/scratch"
 export BOOTSTRAP_TEST_SSH_ARGS="$fixture_root/ssh-args"
 export BOOTSTRAP_TEST_PAYLOAD="$fixture_root/payload"
 printf 'TEST_SECRET=transport\n' >"$repository/oracle/josephduffy-co-uk.env"
+printf 'SWIFT_SECRET=transport\n' >"$repository/oracle/josephduffy-co-uk-swift.env"
 install -m 0600 "$fixture_root/key" "$repository/oracle/tailscale-auth-key"
 install -m 0600 "$fixture_root/github-token" "$repository/oracle/github-attestation-token"
 bash "$repository/oracle/bootstrap-remote.sh" admin@server-alias >"$fixture_root/remote.log" 2>&1
@@ -250,11 +278,15 @@ bash "$repository/oracle/bootstrap-remote.sh" admin@server-alias >"$fixture_root
 [[ ! -e $fixture_root/payload/oracle/josephduffy-co-uk.env ]] || fail 'secret was placed in the release'
 [[ ! -e $fixture_root/payload/.git ]] || fail '.git was uploaded'
 cmp -s "$repository/oracle/josephduffy-co-uk.env" "$fixture_root/payload/bootstrap-input/josephduffy-co-uk.env" || fail 'environment was not uploaded'
+cmp -s \
+    "$repository/oracle/josephduffy-co-uk-swift.env" \
+    "$fixture_root/payload/bootstrap-input/josephduffy-co-uk-swift.env" ||
+    fail 'Swift environment was not uploaded'
 cmp -s "$fixture_root/key" "$fixture_root/payload/bootstrap-input/tailscale-auth-key" || fail 'key was not uploaded'
 cmp -s "$fixture_root/github-token" "$fixture_root/payload/bootstrap-input/github-attestation-token" ||
     fail 'GitHub token was not uploaded'
 if grep -q \
-    'tskey-auth-fake-test-value\|github_pat_test_attestation_token\|TEST_SECRET=transport' \
+    'tskey-auth-fake-test-value\|github_pat_test_attestation_token\|TEST_SECRET=transport\|SWIFT_SECRET=transport' \
     "$fixture_root/ssh-args" "$fixture_root/remote.log"; then
     fail 'secret leaked into SSH arguments or output'
 fi

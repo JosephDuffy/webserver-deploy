@@ -40,6 +40,10 @@ for (const outcome of ['healthy', 'redirect', 'unhealthy', 'unreachable']) {
 }
 
 const caddy = readFileSync(new URL('../quadlet/caddy.container', import.meta.url), 'utf8');
+const swift = readFileSync(
+    new URL('../quadlet/josephduffy-co-uk-swift.container', import.meta.url),
+    'utf8',
+);
 const configuration = readFileSync(new URL('../Caddyfile', import.meta.url), 'utf8');
 const network = readFileSync(new URL('../quadlet/webserver.network', import.meta.url), 'utf8');
 assert.match(caddy, /^HealthCmd=\/usr\/bin\/curl --silent --output \/dev\/null --show-error --fail --max-time 5 http:\/\/localhost:2019\/config\/$/m);
@@ -52,6 +56,24 @@ assert.doesNotMatch(website, /^Sysctl=net\.ipv4\.ip_unprivileged_port_start=/m);
 assert.doesNotMatch(caddy, /^Sysctl=net\.ipv4\.ip_unprivileged_port_start=/m);
 assert.match(caddy, /^AddCapability=NET_BIND_SERVICE$/m);
 assert.match(website, /^Tmpfs=\/app\/.next\/server\/pages:rw,nosuid,nodev,noexec,size=128m,U,mode=0750$/m);
+assert.match(
+    swift,
+    /^HealthCmd=\/usr\/bin\/curl --head --silent --output \/dev\/null --show-error --fail --max-time 5 http:\/\/localhost:8080\/$/m,
+);
+assert.match(swift, /^EnvironmentFile=\/etc\/webserver\/josephduffy-co-uk-swift\.env$/m);
+assert.match(swift, /^GlobalArgs=--runtime=runc$/m);
+assert.match(swift, /^ReadOnly=true$/m);
+assert.match(swift, /^User=1001:1001$/m);
+assert.match(swift, /^PodmanArgs=--memory=4g --cpu-shares=512 --pids-limit=256$/m);
+assert.match(website, /^PodmanArgs=--memory=2g --cpu-shares=512 --pids-limit=256$/m);
+assert.match(caddy, /^PodmanArgs=--memory=512m --cpu-shares=1024 --pids-limit=128$/m);
+assert.match(
+    swift,
+    /^ConditionPathExists=\/var\/lib\/webserver-deploy\/images\/josephduffy-co-uk-swift\/enabled$/m,
+);
+assert.doesNotMatch(caddy, /Requires=.*josephduffy-co-uk/);
+assert.match(configuration, /^swift\.josephduffy\.co\.uk \{$/m);
+assert.match(configuration, /^\s*reverse_proxy josephduffy-co-uk-swift:8080$/m);
 assert.match(network, /^Subnet=10\.89\.0\.0\/24$/m);
 assert.match(network, /^Gateway=10\.89\.0\.1$/m);
 console.log('Website health-command and Caddy liveness configuration tests passed.');

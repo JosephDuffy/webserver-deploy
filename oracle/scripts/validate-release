@@ -34,8 +34,10 @@ required_files=(
     quadlet/caddy-data.volume
     quadlet/caddy-config.volume
     quadlet/josephduffy-co-uk.container
+    quadlet/josephduffy-co-uk-swift.container
     quadlet/caddy.container
     josephduffy-co-uk.example.env
+    josephduffy-co-uk-swift.example.env
 )
 
 for file in "${required_files[@]}"; do
@@ -75,15 +77,30 @@ if command -v visudo >/dev/null 2>&1; then
 fi
 
 grep -Fq 'Image=localhost/josephduffy-co-uk:production' "$release/quadlet/josephduffy-co-uk.container"
+grep -Fq 'Image=localhost/josephduffy-co-uk-swift:production' \
+    "$release/quadlet/josephduffy-co-uk-swift.container"
 grep -Fq 'Pull=never' "$release/quadlet/josephduffy-co-uk.container"
+grep -Fq 'Pull=never' "$release/quadlet/josephduffy-co-uk-swift.container"
 grep -Fq 'GlobalArgs=--runtime=runc' "$release/quadlet/josephduffy-co-uk.container"
+grep -Fq 'GlobalArgs=--runtime=runc' "$release/quadlet/josephduffy-co-uk-swift.container"
 grep -Fq 'GlobalArgs=--runtime=runc' "$release/quadlet/caddy.container"
 grep -Fq 'Subnet=10.89.0.0/24' "$release/quadlet/webserver.network"
 grep -Fq 'Gateway=10.89.0.1' "$release/quadlet/webserver.network"
 grep -Fq 'Requires=webserver-network.service webserver-firewall.service' \
     "$release/quadlet/josephduffy-co-uk.container"
+grep -Fq 'Requires=webserver-network.service webserver-firewall.service' \
+    "$release/quadlet/josephduffy-co-uk-swift.container"
+grep -Fq \
+    'ConditionPathExists=/var/lib/webserver-deploy/images/josephduffy-co-uk-swift/enabled' \
+    "$release/quadlet/josephduffy-co-uk-swift.container"
 grep -Fq 'Tmpfs=/app/.next/server/pages:rw,nosuid,nodev,noexec,size=128m,U,mode=0750' \
     "$release/quadlet/josephduffy-co-uk.container"
+grep -Fq 'PodmanArgs=--memory=2g --cpu-shares=512 --pids-limit=256' \
+    "$release/quadlet/josephduffy-co-uk.container"
+grep -Fq 'PodmanArgs=--memory=4g --cpu-shares=512 --pids-limit=256' \
+    "$release/quadlet/josephduffy-co-uk-swift.container"
+grep -Fq 'PodmanArgs=--memory=512m --cpu-shares=1024 --pids-limit=128' \
+    "$release/quadlet/caddy.container"
 grep -Fq 'systemctl restart webserver-firewall.service' "$release/bootstrap.sh"
 grep -Fq 'ExecStart=/usr/local/sbin/webserver-reconcile-firewall' \
     "$release/host/webserver-firewall.service"
@@ -93,6 +110,7 @@ if grep -RqE --exclude-dir=tests --exclude='*.example.*' --exclude=validate-rele
     exit 1
 fi
 grep -Fq 'oracle.josephduffy.co.uk' "$release/Caddyfile"
+grep -Fq 'swift.josephduffy.co.uk' "$release/Caddyfile"
 
 if [[ $mode == --static ]]; then
     exit 0

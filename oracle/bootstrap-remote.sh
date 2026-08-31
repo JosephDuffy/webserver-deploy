@@ -74,6 +74,7 @@ mkdir -m 0700 "$temporary_root/bootstrap-input"
 printf '%s\n' "$commit" >"$temporary_root/bootstrap-input/commit"
 for input in \
     "$bootstrap_dir/josephduffy-co-uk.env" \
+    "$bootstrap_dir/josephduffy-co-uk-swift.env" \
     "$tailscale_auth_key_file" \
     "$github_token_file"; do
     if [[ -e $input || -L $input ]]; then
@@ -85,6 +86,11 @@ for input in \
 done
 if [[ -f $bootstrap_dir/josephduffy-co-uk.env ]]; then
     install -m 0600 "$bootstrap_dir/josephduffy-co-uk.env" "$temporary_root/bootstrap-input/josephduffy-co-uk.env"
+fi
+if [[ -f $bootstrap_dir/josephduffy-co-uk-swift.env ]]; then
+    install -m 0600 \
+        "$bootstrap_dir/josephduffy-co-uk-swift.env" \
+        "$temporary_root/bootstrap-input/josephduffy-co-uk-swift.env"
 fi
 if [[ -f $tailscale_auth_key_file ]]; then
     install -m 0600 "$tailscale_auth_key_file" "$temporary_root/bootstrap-input/tailscale-auth-key"
@@ -110,7 +116,8 @@ commit=$(<"$temporary_root/bootstrap-input/commit")
 bash "$temporary_root/oracle/bootstrap.sh" "$commit" \
     "$temporary_root/bootstrap-input/tailscale-auth-key" \
     "$temporary_root/bootstrap-input/josephduffy-co-uk.env" \
-    "$temporary_root/bootstrap-input/github-attestation-token"
+    "$temporary_root/bootstrap-input/github-attestation-token" \
+    "$temporary_root/bootstrap-input/josephduffy-co-uk-swift.env"
 '
 REMOTE
 

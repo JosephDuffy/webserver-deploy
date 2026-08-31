@@ -1,27 +1,26 @@
 [Unit]
-Description=josephduffy.co.uk trial website
+Description=josephduffy.co.uk Swift server
 After=network-online.target webserver-network.service webserver-firewall.service
 Wants=network-online.target
 Requires=webserver-network.service webserver-firewall.service
+ConditionPathExists=/var/lib/webserver-deploy/images/josephduffy-co-uk-swift/enabled
 
 [Container]
 GlobalArgs=--runtime=runc
-Image=localhost/josephduffy-co-uk:production
+Image=localhost/josephduffy-co-uk-swift:production
 Pull=never
-ContainerName=josephduffy-co-uk
+ContainerName=josephduffy-co-uk-swift
 Network=webserver.network
-EnvironmentFile=/etc/webserver/josephduffy-co-uk.env
+EnvironmentFile=/etc/webserver/josephduffy-co-uk-swift.env
 ReadOnly=true
 ReadOnlyTmpfs=true
 NoNewPrivileges=true
 DropCapability=all
 User=1001:1001
 Tmpfs=/tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777
-Tmpfs=/app/.next/cache:rw,nosuid,nodev,noexec,size=128m,U,mode=0750
-Tmpfs=/app/.next/server/pages:rw,nosuid,nodev,noexec,size=128m,U,mode=0750
 LogDriver=journald
-PodmanArgs=--memory=2g --cpu-shares=512 --pids-limit=256
-HealthCmd=/usr/local/bin/node -e "fetch('http://'+require('node:os').hostname()+':3000/',{method:'HEAD',redirect:'manual',signal:AbortSignal.timeout(5000)}).then(r=>process.exit(r.status<400?0:1)).catch(()=>process.exit(1))"
+PodmanArgs=--memory=4g --cpu-shares=512 --pids-limit=256
+HealthCmd=/usr/bin/curl --head --silent --output /dev/null --show-error --fail --max-time 5 http://localhost:8080/
 HealthInterval=30s
 HealthTimeout=10s
 HealthRetries=3

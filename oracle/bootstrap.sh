@@ -12,17 +12,20 @@ source "$bootstrap_dir/lib/common.sh"
 source "$bootstrap_dir/lib/bootstrap-support.sh"
 
 require_root
-[[ $# -ge 1 && $# -le 4 ]] ||
-    die "usage: bootstrap.sh <commit> [tailscale-auth-key-file] [environment-file] [github-token-file]"
+[[ $# -ge 1 && $# -le 5 ]] ||
+    die "usage: bootstrap.sh <commit> [tailscale-auth-key-file] [environment-file] [github-token-file] [swift-environment-file]"
 validate_commit "$1" || die "invalid webserver-deploy commit"
 readonly commit=$1
 readonly tailscale_auth_key_file=${2:-"$bootstrap_dir/tailscale-auth-key"}
 readonly supplied_env_file=${3:-"$bootstrap_dir/josephduffy-co-uk.env"}
 readonly github_token_file=${4:-"$bootstrap_dir/github-attestation-token"}
+readonly supplied_swift_env_file=${5:-"$bootstrap_dir/josephduffy-co-uk-swift.env"}
 
 require_supported_host
 # Fail before installing packages or changing access if no real environment exists.
-selected_env_file=$(select_bootstrap_environment "$ENV_FILE" "$supplied_env_file")
+load_deployment_target "$PRIMARY_DEPLOYMENT_TARGET"
+readonly primary_env_file=$DEPLOY_ENV_FILE
+selected_env_file=$(select_bootstrap_environment "$primary_env_file" "$supplied_env_file")
 readonly selected_env_file
 
 install_missing_packages() {
@@ -112,8 +115,13 @@ create_deployment_user webserver-config-deploy
 
 install -d -o root -g root -m 0755 /opt/webserver "$RELEASE_ROOT" /etc/webserver "$QUADLET_DIR"
 install -d -o root -g root -m 0700 "$STATE_DIR"
-install_bootstrap_environment "$selected_env_file" "$ENV_FILE"
-chown root:root "$ENV_FILE"
+install_bootstrap_environment "$selected_env_file" "$primary_env_file"
+chown root:root "$primary_env_file"
+load_deployment_target josephduffy-co-uk-swift
+install_optional_bootstrap_environment "$DEPLOY_ENV_FILE" "$supplied_swift_env_file"
+if [[ -f $DEPLOY_ENV_FILE ]]; then
+    chown root:root "$DEPLOY_ENV_FILE"
+fi
 
 target="$RELEASE_ROOT/$commit"
 if [[ ! -e $target ]]; then
@@ -170,17 +178,21 @@ systemctl restart webserver-firewall.service
 podman pull "$CADDY_IMAGE"
 [[ $(image_platform "$CADDY_IMAGE") == linux/arm64 ]] || die "the pinned Caddy image is not linux/arm64"
 
-if ! podman image exists "$WEBSITE_LOCAL_IMAGE"; then
-    verify_attestation "$WEBSITE_SEED_DIGEST" "$github_token_file"
-    seed_reference="${WEBSITE_IMAGE}@${WEBSITE_SEED_DIGEST}"
+migrate_legacy_image_state
+load_deployment_target "$PRIMARY_DEPLOYMENT_TARGET"
+if ! podman image exists "$DEPLOY_LOCAL_IMAGE"; then
+    verify_attestation \
+        "$DEPLOY_REPOSITORY" "$DEPLOY_IMAGE" "$DEPLOY_SEED_DIGEST" "$github_token_file"
+    seed_reference="${DEPLOY_IMAGE}@${DEPLOY_SEED_DIGEST}"
     podman pull "$seed_reference"
-    [[ $(image_platform "$seed_reference") == linux/arm64 ]] || die "the seed website image is not linux/arm64"
-    podman tag "$seed_reference" "$WEBSITE_LOCAL_IMAGE"
-    printf '%s\n' "$WEBSITE_SEED_DIGEST" >"$STATE_DIR/current-digest"
-    chmod 0600 "$STATE_DIR/current-digest"
+    [[ $(image_platform "$seed_reference") == linux/arm64 ]] ||
+        die "the seed website image is not linux/arm64"
+    podman tag "$seed_reference" "$DEPLOY_LOCAL_IMAGE"
+    mkdir -p "$DEPLOY_STATE_DIR"
+    printf '%s\n' "$DEPLOY_SEED_DIGEST" >"$DEPLOY_STATE_DIR/current-digest"
+    chmod 0600 "$DEPLOY_STATE_DIR/current-digest"
 fi
-website_image_id=$(podman image inspect --format '{{.Id}}' "$WEBSITE_LOCAL_IMAGE")
-readonly website_image_id
+enable_deployment_target
 
 if [[ $configuration_changed == true ]]; then
     service_action=restart
@@ -189,10 +201,27 @@ else
 fi
 readonly service_action
 
+declare -A enabled_image_ids=()
+enabled_services=()
+enabled_journal_arguments=()
+while IFS= read -r deployment_target_name; do
+    load_deployment_target "$deployment_target_name"
+    deployment_target_is_enabled || continue
+    [[ -f $DEPLOY_ENV_FILE && -s $DEPLOY_ENV_FILE && ! -L $DEPLOY_ENV_FILE ]] ||
+        die "missing environment for enabled target ${deployment_target_name}"
+    podman image exists "$DEPLOY_LOCAL_IMAGE" ||
+        die "missing promoted image for enabled target ${deployment_target_name}"
+    enabled_image_ids["$deployment_target_name"]=$(
+        podman image inspect --format '{{.Id}}' "$DEPLOY_LOCAL_IMAGE"
+    )
+    enabled_services+=("$DEPLOY_SERVICE")
+    enabled_journal_arguments+=(--unit "$DEPLOY_SERVICE")
+done < <(deployment_targets)
+
 stop_stack_and_report_journal() {
-    systemctl stop caddy.service josephduffy-co-uk.service >/dev/null 2>&1 || true
+    systemctl stop caddy.service "${enabled_services[@]}" >/dev/null 2>&1 || true
     journalctl \
-        --unit josephduffy-co-uk.service \
+        "${enabled_journal_arguments[@]}" \
         --unit caddy.service \
         --boot \
         --lines 100 \
@@ -200,25 +229,37 @@ stop_stack_and_report_journal() {
         --output cat >&2 || true
 }
 
-if ! systemctl "$service_action" josephduffy-co-uk.service caddy.service; then
+if ! systemctl "$service_action" "${enabled_services[@]}" caddy.service; then
     stop_stack_and_report_journal
     die "failed to ${service_action} the website stack"
 fi
 
-if ! wait_for_container_image josephduffy-co-uk "$website_image_id" 6 5 ||
-    ! wait_for_container_health josephduffy-co-uk 6 5 ||
-    ! wait_for_container_health caddy 6 5; then
+while IFS= read -r deployment_target_name; do
+    [[ -n ${enabled_image_ids[$deployment_target_name]:-} ]] || continue
+    load_deployment_target "$deployment_target_name"
+    if ! wait_for_container_image \
+        "$DEPLOY_CONTAINER" "${enabled_image_ids[$deployment_target_name]}" 6 5 ||
+        ! wait_for_container_health "$DEPLOY_CONTAINER" 6 5; then
+        stop_stack_and_report_journal
+        die "target ${deployment_target_name} failed its internal health checks"
+    fi
+done < <(deployment_targets)
+if ! wait_for_container_health caddy 6 5; then
     stop_stack_and_report_journal
-    die "website stack failed its internal health checks"
+    die "Caddy failed its internal health check"
 fi
 
 printf '%s\n' "$commit" >"$STATE_DIR/current-config-commit"
 chmod 0600 "$STATE_DIR/current-config-commit"
 record_history "bootstrap reconciled ${commit}"
 
-if wait_for_https_health "$TRIAL_HOSTNAME" / 6 5; then
-    log "bootstrap complete; ${TRIAL_HOSTNAME} is healthy"
-else
-    log "bootstrap complete and containers are healthy, but HTTPS is not ready yet (DNS, secrets, and ACME may still need configuration)"
-fi
+while IFS= read -r deployment_target_name; do
+    [[ -n ${enabled_image_ids[$deployment_target_name]:-} ]] || continue
+    load_deployment_target "$deployment_target_name"
+    if wait_for_https_health "$DEPLOY_HOSTNAME" "$DEPLOY_HEALTH_PATH" 6 5; then
+        log "bootstrap complete; ${DEPLOY_HOSTNAME} is healthy"
+    else
+        log "bootstrap complete and ${deployment_target_name} is internally healthy, but HTTPS is not ready yet"
+    fi
+done < <(deployment_targets)
 log "do not remove public SSH yet; follow README.md and then run webserver-lock-down-ssh"

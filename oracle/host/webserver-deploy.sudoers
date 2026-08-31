@@ -1,4 +1,4 @@
-# Managed by webserver-deploy. The called root-owned programs validate exactly one argument before
-# running any fixed deployment operation.
+# Managed by webserver-deploy. The called root-owned programs validate exact argument counts and
+# formats before running any allow-listed deployment operation.
 webserver-image-deploy ALL=(root) NOPASSWD: /usr/local/sbin/webserver-image-deploy *
 webserver-config-deploy ALL=(root) NOPASSWD: /usr/local/sbin/webserver-config-deploy *

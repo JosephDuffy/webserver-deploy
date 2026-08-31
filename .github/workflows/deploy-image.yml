@@ -1,8 +1,13 @@
-name: Deploy josephduffy.co.uk to Oracle
+name: Deploy an allow-listed image to Oracle
 
 on:
   workflow_call:
     inputs:
+      target:
+        description: Allow-listed Oracle deployment target
+        required: false
+        default: josephduffy-co-uk
+        type: string
       digest:
         description: Exact lowercase SHA-256 OCI index digest
         required: true
@@ -14,7 +19,7 @@ on:
         required: true
 
 concurrency:
-  group: oracle-website-image
+  group: oracle-image
   cancel-in-progress: false
 
 jobs:
@@ -26,19 +31,37 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - name: Authorize the caller repository
+      - name: Authorize the caller and target
         env:
           CALLER_REPOSITORY: ${{ github.repository }}
-        run: test "$CALLER_REPOSITORY" = JosephDuffy/josephduffy.co.uk
+          TARGET: ${{ inputs.target }}
+        run: |
+          test "$CALLER_REPOSITORY" = JosephDuffy/josephduffy.co.uk
+          case "$TARGET" in
+            josephduffy-co-uk|josephduffy-co-uk-swift) ;;
+            *) exit 1 ;;
+          esac
 
       - name: Validate and verify the image attestation
         env:
+          TARGET: ${{ inputs.target }}
           DIGEST: ${{ inputs.digest }}
           GH_TOKEN: ${{ github.token }}
         run: |
           [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          case "$TARGET" in
+            josephduffy-co-uk)
+              image=ghcr.io/josephduffy/josephduffy.co.uk
+              ;;
+            josephduffy-co-uk-swift)
+              image=ghcr.io/josephduffy/josephduffy-co-uk-swift
+              ;;
+            *)
+              exit 1
+              ;;
+          esac
           gh attestation verify \
-            "oci://ghcr.io/josephduffy/josephduffy.co.uk@$DIGEST" \
+            "oci://$image@$DIGEST" \
             --repo JosephDuffy/josephduffy.co.uk
 
       - name: Connect to the image deployment identity
@@ -51,10 +74,15 @@ jobs:
 
       - name: Deploy only the verified digest
         env:
+          TARGET: ${{ inputs.target }}
           DIGEST: ${{ inputs.digest }}
           GH_TOKEN: ${{ github.token }}
         run: |
+          case "$TARGET" in
+            josephduffy-co-uk|josephduffy-co-uk-swift) ;;
+            *) exit 1 ;;
+          esac
           [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
           printf '%s\n' "$GH_TOKEN" | \
             tailscale ssh webserver-image-deploy@webserver-oracle \
-              "sudo /usr/local/sbin/webserver-image-deploy $DIGEST"
+              "sudo /usr/local/sbin/webserver-image-deploy $TARGET $DIGEST"

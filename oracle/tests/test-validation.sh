@@ -56,6 +56,31 @@ if validate_commit '0123456789abcdef0123456789abcdef01234567' extra; then
     fail 'commit validator accepted multiple arguments'
 fi
 
+load_deployment_target josephduffy-co-uk
+[[ $DEPLOY_IMAGE == ghcr.io/josephduffy/josephduffy.co.uk ]] ||
+    fail 'primary deployment target selected the wrong image'
+[[ $DEPLOY_STATE_DIR == /var/lib/webserver-deploy/images/josephduffy-co-uk ]] ||
+    fail 'primary deployment target selected the wrong state directory'
+load_deployment_target josephduffy-co-uk-swift
+[[ $DEPLOY_IMAGE == ghcr.io/josephduffy/josephduffy-co-uk-swift ]] ||
+    fail 'Swift deployment target selected the wrong image'
+[[ $DEPLOY_STATE_DIR == /var/lib/webserver-deploy/images/josephduffy-co-uk-swift ]] ||
+    fail 'Swift deployment target selected the wrong state directory'
+if (load_deployment_target arbitrary-image) >/dev/null 2>&1; then
+    fail 'unknown deployment target was accepted'
+fi
+
+workflow="$oracle_dir/../.github/workflows/deploy-image.yml"
+grep -Fq 'target:' "$workflow" || fail 'reusable workflow omitted its target input'
+grep -Fq 'default: josephduffy-co-uk' "$workflow" ||
+    fail 'reusable workflow does not preserve the primary target default'
+grep -Fq 'josephduffy-co-uk|josephduffy-co-uk-swift' "$workflow" ||
+    fail 'reusable workflow does not validate its exact target allow-list'
+# The literal workflow variables prove they are forwarded by the remote command.
+# shellcheck disable=SC2016
+grep -Fq 'webserver-image-deploy $TARGET $DIGEST' "$workflow" ||
+    fail 'reusable workflow does not pass the validated target and digest'
+
 health_calls=()
 # These test doubles are called indirectly by functions in the sourced libraries.
 # shellcheck disable=SC2317,SC2329
@@ -81,6 +106,10 @@ wait_for_container_health website 1 0 || fail 'successful container health check
 wait_for_container_health caddy 1 0 || fail 'successful Caddy health check was not accepted'
 wait_for_https_health example.com /ready 1 0 ||
     fail 'successful HTTPS health check was not accepted'
+# This invocation precedes the deliberately mocked definition below.
+# shellcheck disable=SC2218
+wait_for_target_deployment website example.com /ready sha256:expected-image 1 0 ||
+    fail 'successful target deployment was not accepted'
 [[ ${health_calls[0]} == 'podman healthcheck run website' ]] ||
     fail 'container health did not execute the configured Podman health check'
 [[ ${health_calls[1]} == 'podman healthcheck run caddy' ]] ||
@@ -97,19 +126,21 @@ podman() { calls+=("podman $*"); }
 # shellcheck disable=SC2317,SC2329
 systemctl() { calls+=("systemctl $*"); }
 # shellcheck disable=SC2317,SC2329
-wait_for_website_deployment() { calls+=("wait_for_website_deployment $*"); return 1; }
+wait_for_target_deployment() { calls+=("wait_for_target_deployment $*"); return 1; }
 
-restore_previous_image 'sha256:previous-image-id'
-[[ ${calls[0]} == "podman tag sha256:previous-image-id $WEBSITE_LOCAL_IMAGE" ]] ||
+restore_previous_image \
+    sha256:previous-image-id localhost/example:production example.service \
+    example example.com /ready
+[[ ${calls[0]} == 'podman tag sha256:previous-image-id localhost/example:production' ]] ||
     fail "rollback did not restore the prior tag"
-[[ ${calls[1]} == 'systemctl restart josephduffy-co-uk.service' ]] ||
+[[ ${calls[1]} == 'systemctl restart example.service' ]] ||
     fail "rollback did not restart the website"
-[[ ${calls[2]} == 'wait_for_website_deployment sha256:previous-image-id 12 5' ]] ||
+[[ ${calls[2]} == 'wait_for_target_deployment example example.com /ready sha256:previous-image-id 12 5' ]] ||
     fail "rollback did not recheck the restored image"
 
 calls=()
-restore_previous_image ''
-[[ ${calls[0]} == 'systemctl stop josephduffy-co-uk.service' ]] ||
+restore_previous_image '' localhost/example:production example.service example example.com /ready
+[[ ${calls[0]} == 'systemctl stop example.service' ]] ||
     fail "empty-state rollback did not stop the website"
 
 printf 'Validation and rollback tests passed.\n'

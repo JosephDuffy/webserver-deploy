@@ -26,6 +26,23 @@ install_bootstrap_environment() {
     fi
 }
 
+install_optional_bootstrap_environment() {
+    local destination=$1
+    local supplied=$2
+
+    if [[ -e $destination || -L $destination ]]; then
+        [[ -f $destination && -s $destination && ! -L $destination ]] ||
+            die "existing environment is empty or unsafe: $destination"
+        chmod 0600 "$destination"
+        return
+    fi
+    if [[ -e $supplied || -L $supplied ]]; then
+        [[ -f $supplied && -s $supplied && -r $supplied && ! -L $supplied ]] ||
+            die "supplied environment is empty or unsafe: $supplied"
+        install -m 0600 "$supplied" "$destination"
+    fi
+}
+
 copy_bootstrap_release() {
     local source_directory=$1
     local destination=$2
@@ -33,7 +50,10 @@ copy_bootstrap_release() {
         bootstrap.sh bootstrap-remote.sh Caddyfile README.md
         lib host quadlet scripts tests
     )
-    local example_files=(josephduffy-co-uk.example.env)
+    local example_files=(
+        josephduffy-co-uk.example.env
+        josephduffy-co-uk-swift.example.env
+    )
     if [[ -f $source_directory/.shellcheckrc ]]; then
         files+=(.shellcheckrc)
     fi

@@ -5,20 +5,86 @@ set -Eeuo pipefail
 # Constants are consumed by the commands that source this library, making them appear unused.
 # shellcheck disable=SC2034
 {
-    readonly WEBSITE_REPOSITORY="JosephDuffy/josephduffy.co.uk"
-    readonly WEBSITE_IMAGE="ghcr.io/josephduffy/josephduffy.co.uk"
-    readonly WEBSITE_SEED_DIGEST="sha256:b5024818f78fbc6aeb72b4781863c75211ea026fb73940ac2e25de094706cbd0"
-    readonly WEBSITE_LOCAL_IMAGE="localhost/josephduffy-co-uk:production"
     readonly CADDY_IMAGE="docker.io/library/caddy:2.11.4-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648"
-    readonly TRIAL_HOSTNAME="oracle.josephduffy.co.uk"
     readonly RELEASE_ROOT="/opt/webserver/releases"
     readonly CURRENT_RELEASE="/opt/webserver/current"
     readonly STATE_DIR="/var/lib/webserver-deploy"
-    readonly ENV_FILE="/etc/webserver/josephduffy-co-uk.env"
     readonly QUADLET_DIR="/etc/containers/systemd"
     readonly FIREWALL_SERVICE="webserver-firewall.service"
     readonly WEBSERVER_NETWORK_SUBNET="10.89.0.0/24"
     readonly WEBSERVER_NETWORK_GATEWAY="10.89.0.1"
+    readonly PRIMARY_DEPLOYMENT_TARGET='josephduffy-co-uk'
+}
+
+# Root-owned allow-list for the image deployment wrapper. Callers select only an opaque target;
+# image references, services, state paths, and health endpoints remain fixed here.
+deployment_targets() {
+    printf '%s\n' josephduffy-co-uk josephduffy-co-uk-swift
+}
+
+load_deployment_target() {
+    [[ $# -eq 1 ]] || die "load_deployment_target requires one target"
+
+    # These values are intentionally assigned for consumption by the caller.
+    # shellcheck disable=SC2034
+    case "$1" in
+        josephduffy-co-uk)
+            DEPLOY_TARGET='josephduffy-co-uk'
+            DEPLOY_REPOSITORY='JosephDuffy/josephduffy.co.uk'
+            DEPLOY_IMAGE='ghcr.io/josephduffy/josephduffy.co.uk'
+            DEPLOY_SEED_DIGEST='sha256:b5024818f78fbc6aeb72b4781863c75211ea026fb73940ac2e25de094706cbd0'
+            DEPLOY_LOCAL_IMAGE='localhost/josephduffy-co-uk:production'
+            DEPLOY_CONTAINER='josephduffy-co-uk'
+            DEPLOY_SERVICE='josephduffy-co-uk.service'
+            DEPLOY_QUADLET='josephduffy-co-uk.container'
+            DEPLOY_HOSTNAME='oracle.josephduffy.co.uk'
+            DEPLOY_HEALTH_PATH='/'
+            DEPLOY_ENV_FILE='/etc/webserver/josephduffy-co-uk.env'
+            ;;
+        josephduffy-co-uk-swift)
+            DEPLOY_TARGET='josephduffy-co-uk-swift'
+            DEPLOY_REPOSITORY='JosephDuffy/josephduffy.co.uk'
+            DEPLOY_IMAGE='ghcr.io/josephduffy/josephduffy-co-uk-swift'
+            DEPLOY_SEED_DIGEST=''
+            DEPLOY_LOCAL_IMAGE='localhost/josephduffy-co-uk-swift:production'
+            DEPLOY_CONTAINER='josephduffy-co-uk-swift'
+            DEPLOY_SERVICE='josephduffy-co-uk-swift.service'
+            DEPLOY_QUADLET='josephduffy-co-uk-swift.container'
+            DEPLOY_HOSTNAME='swift.josephduffy.co.uk'
+            DEPLOY_HEALTH_PATH='/'
+            DEPLOY_ENV_FILE='/etc/webserver/josephduffy-co-uk-swift.env'
+            ;;
+        *)
+            die "unknown deployment target '$1'"
+            ;;
+    esac
+
+    DEPLOY_STATE_DIR="$STATE_DIR/images/$DEPLOY_TARGET"
+}
+
+deployment_target_is_enabled() {
+    [[ -f $DEPLOY_STATE_DIR/enabled && ! -L $DEPLOY_STATE_DIR/enabled ]]
+}
+
+enable_deployment_target() {
+    mkdir -p "$DEPLOY_STATE_DIR"
+    install -o root -g root -m 0600 /dev/null "$DEPLOY_STATE_DIR/enabled"
+}
+
+migrate_legacy_image_state() {
+    load_deployment_target "$PRIMARY_DEPLOYMENT_TARGET"
+    mkdir -p "$DEPLOY_STATE_DIR"
+
+    local state_file
+    for state_file in current-digest previous-digest; do
+        if [[ -f $STATE_DIR/$state_file && ! -e $DEPLOY_STATE_DIR/$state_file ]]; then
+            install -o root -g root -m 0600 \
+                "$STATE_DIR/$state_file" "$DEPLOY_STATE_DIR/$state_file"
+        fi
+    done
+    if [[ -f $DEPLOY_STATE_DIR/current-digest ]]; then
+        enable_deployment_target
+    fi
 }
 
 die() {
@@ -120,9 +186,12 @@ record_history() {
 
 verify_attestation() (
     set +x
-    [[ $# -ge 1 && $# -le 2 ]] || die "verify_attestation requires a digest and optional token file"
-    local attestation_digest=$1
-    local token_file=${2:-}
+    [[ $# -ge 3 && $# -le 4 ]] ||
+        die "verify_attestation requires a repository, image, digest, and optional token file"
+    local attestation_repository=$1
+    local attestation_image=$2
+    local attestation_digest=$3
+    local token_file=${4:-}
     local token
 
     if [[ -n $token_file ]]; then
@@ -136,18 +205,20 @@ verify_attestation() (
         die "GitHub attestation verification requires a single-line token"
 
     GH_TOKEN=$token GH_PROMPT_DISABLED=1 \
-        gh attestation verify "oci://${WEBSITE_IMAGE}@${attestation_digest}" --repo "$WEBSITE_REPOSITORY"
+        gh attestation verify "oci://${attestation_image}@${attestation_digest}" \
+            --repo "$attestation_repository"
 )
 
 verify_attestation_from_stdin() (
     set +x
-    [[ $# -eq 1 ]] || die "verify_attestation_from_stdin requires a digest"
+    [[ $# -eq 3 ]] ||
+        die "verify_attestation_from_stdin requires a repository, image, and digest"
     local token
     IFS= read -r token || die "GitHub attestation token was not supplied on standard input"
     if IFS= read -r; then
         die "GitHub attestation input must contain exactly one line"
     fi
-    GH_TOKEN=$token verify_attestation "$1"
+    GH_TOKEN=$token verify_attestation "$1" "$2" "$3"
 )
 
 image_platform() {
@@ -215,23 +286,15 @@ wait_for_https_health() {
     return 1
 }
 
-wait_for_website_deployment() {
-    local expected_image_id=$1
-    local attempts=${2:-30}
-    local delay=${3:-5}
+wait_for_target_deployment() {
+    local container=$1
+    local hostname=$2
+    local path=$3
+    local expected_image_id=$4
+    local attempts=${5:-30}
+    local delay=${6:-5}
 
-    wait_for_container_image josephduffy-co-uk "$expected_image_id" "$attempts" "$delay" &&
-        wait_for_container_health josephduffy-co-uk "$attempts" "$delay" &&
-        wait_for_https_health "$TRIAL_HOSTNAME" / "$attempts" "$delay"
-}
-
-wait_for_stack_health() {
-    local expected_image_id=$1
-    local attempts=${2:-30}
-    local delay=${3:-5}
-
-    wait_for_container_image josephduffy-co-uk "$expected_image_id" "$attempts" "$delay" &&
-        wait_for_container_health josephduffy-co-uk "$attempts" "$delay" &&
-        wait_for_container_health caddy "$attempts" "$delay" &&
-        wait_for_https_health "$TRIAL_HOSTNAME" / "$attempts" "$delay"
+    wait_for_container_image "$container" "$expected_image_id" "$attempts" "$delay" &&
+        wait_for_container_health "$container" "$attempts" "$delay" &&
+        wait_for_https_health "$hostname" "$path" "$attempts" "$delay"
 }
