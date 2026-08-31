@@ -1,8 +1,8 @@
 [Unit]
 Description=Webserver host firewall
 Wants=network-online.target
-After=network-online.target tailscaled.service webserver-network.service
-Requires=webserver-network.service
+After=network-online.target tailscaled.service webserver-dual-stack-network.service
+Requires=webserver-dual-stack-network.service
 Before=josephduffy-co-uk.service josephduffy-co-uk-swift.service caddy.service
 
 [Service]

@@ -19,6 +19,7 @@ readonly digest=$2
 
 require_supported_host
 require_runtime_capabilities
+require_public_ipv6_route
 [[ -f $DEPLOY_ENV_FILE && -s $DEPLOY_ENV_FILE && ! -L $DEPLOY_ENV_FILE ]] ||
     die "missing environment for ${requested_target}; bootstrap update required"
 

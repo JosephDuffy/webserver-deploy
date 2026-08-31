@@ -11,8 +11,12 @@ set -Eeuo pipefail
     readonly STATE_DIR="/var/lib/webserver-deploy"
     readonly QUADLET_DIR="/etc/containers/systemd"
     readonly FIREWALL_SERVICE="webserver-firewall.service"
-    readonly WEBSERVER_NETWORK_SUBNET="10.89.0.0/24"
-    readonly WEBSERVER_NETWORK_GATEWAY="10.89.0.1"
+    readonly WEBSERVER_NETWORK_NAME="webserver-dual-stack"
+    readonly WEBSERVER_NETWORK_SERVICE="webserver-dual-stack-network.service"
+    readonly WEBSERVER_NETWORK_SUBNET="10.90.0.0/24"
+    readonly WEBSERVER_NETWORK_GATEWAY="10.90.0.1"
+    readonly WEBSERVER_NETWORK_IPV6_SUBNET="fd9d:7a3b:6f2c:1::/64"
+    readonly WEBSERVER_NETWORK_IPV6_GATEWAY="fd9d:7a3b:6f2c:1::1"
     readonly PRIMARY_DEPLOYMENT_TARGET='josephduffy-co-uk'
 }
 
@@ -118,6 +122,15 @@ require_supported_host() {
         die "aarch64 is required (found $(uname -m))"
 }
 
+require_public_ipv6_route() {
+    local route
+    route=$(ip -6 route get 2606:4700:4700::1111 2>/dev/null) ||
+        die "a working public IPv6 route is required; configure the Oracle VNIC and Netplan first"
+    [[ $route =~ [[:space:]]src[[:space:]][23][0-9a-fA-F]{3}: ]] ||
+        die "the public IPv6 route has no global unicast source address;" \
+            "configure the Oracle VNIC and Netplan first"
+}
+
 require_command() {
     command -v "$1" >/dev/null 2>&1 ||
         die "missing required command '$1'; bootstrap update required"
@@ -125,7 +138,7 @@ require_command() {
 
 require_runtime_capabilities() {
     local command
-    for command in podman runc systemctl curl jq gh flock tailscale iptables ip6tables; do
+    for command in podman runc systemctl curl jq gh flock tailscale ip iptables ip6tables; do
         require_command "$command"
     done
     [[ -x /usr/libexec/podman/quadlet ]] ||

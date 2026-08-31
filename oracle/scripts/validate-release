@@ -31,6 +31,7 @@ required_files=(
     host/sshd_config.transitional
     host/sshd_config.locked-down
     quadlet/webserver.network
+    quadlet/webserver-dual-stack.network
     quadlet/caddy-data.volume
     quadlet/caddy-config.volume
     quadlet/josephduffy-co-uk.container
@@ -84,12 +85,29 @@ grep -Fq 'Pull=never' "$release/quadlet/josephduffy-co-uk-swift.container"
 grep -Fq 'GlobalArgs=--runtime=runc' "$release/quadlet/josephduffy-co-uk.container"
 grep -Fq 'GlobalArgs=--runtime=runc' "$release/quadlet/josephduffy-co-uk-swift.container"
 grep -Fq 'GlobalArgs=--runtime=runc' "$release/quadlet/caddy.container"
-grep -Fq 'Subnet=10.89.0.0/24' "$release/quadlet/webserver.network"
-grep -Fq 'Gateway=10.89.0.1' "$release/quadlet/webserver.network"
-grep -Fq 'Requires=webserver-network.service webserver-firewall.service' \
+grep -Fq 'NetworkName=webserver-dual-stack' "$release/quadlet/webserver-dual-stack.network"
+grep -Fq 'IPv6=true' "$release/quadlet/webserver-dual-stack.network"
+grep -Fq 'Subnet=10.90.0.0/24' "$release/quadlet/webserver-dual-stack.network"
+grep -Fq 'Gateway=10.90.0.1' "$release/quadlet/webserver-dual-stack.network"
+grep -Fq 'Subnet=fd9d:7a3b:6f2c:1::/64' "$release/quadlet/webserver-dual-stack.network"
+grep -Fq 'Gateway=fd9d:7a3b:6f2c:1::1' "$release/quadlet/webserver-dual-stack.network"
+grep -Fq 'Requires=webserver-dual-stack-network.service webserver-firewall.service' \
     "$release/quadlet/josephduffy-co-uk.container"
-grep -Fq 'Requires=webserver-network.service webserver-firewall.service' \
+grep -Fq 'Requires=webserver-dual-stack-network.service webserver-firewall.service' \
     "$release/quadlet/josephduffy-co-uk-swift.container"
+grep -Fq 'Requires=webserver-dual-stack-network.service webserver-firewall.service' \
+    "$release/quadlet/caddy.container"
+grep -Fq 'Network=webserver-dual-stack.network' \
+    "$release/quadlet/josephduffy-co-uk.container"
+grep -Fq 'Network=webserver-dual-stack.network' \
+    "$release/quadlet/josephduffy-co-uk-swift.container"
+grep -Fq 'Network=webserver-dual-stack.network' "$release/quadlet/caddy.container"
+grep -Fq 'PublishPort=0.0.0.0:80:80/tcp' "$release/quadlet/caddy.container"
+grep -Fq 'PublishPort=[::]:80:80/tcp' "$release/quadlet/caddy.container"
+grep -Fq 'PublishPort=0.0.0.0:443:443/tcp' "$release/quadlet/caddy.container"
+grep -Fq 'PublishPort=[::]:443:443/tcp' "$release/quadlet/caddy.container"
+grep -Fq 'PublishPort=0.0.0.0:443:443/udp' "$release/quadlet/caddy.container"
+grep -Fq 'PublishPort=[::]:443:443/udp' "$release/quadlet/caddy.container"
 grep -Fq \
     'ConditionPathExists=/var/lib/webserver-deploy/images/josephduffy-co-uk-swift/enabled' \
     "$release/quadlet/josephduffy-co-uk-swift.container"
@@ -104,6 +122,11 @@ grep -Fq 'PodmanArgs=--memory=512m --cpu-shares=1024 --pids-limit=128' \
 grep -Fq 'systemctl restart webserver-firewall.service' "$release/bootstrap.sh"
 grep -Fq 'ExecStart=/usr/local/sbin/webserver-reconcile-firewall' \
     "$release/host/webserver-firewall.service"
+grep -Fq 'Requires=webserver-dual-stack-network.service' \
+    "$release/host/webserver-firewall.service"
+grep -Fq 'require_public_ipv6_route' "$release/bootstrap.sh"
+grep -Fq 'require_public_ipv6_route' "$release/scripts/webserver-config-deploy"
+grep -Fq 'require_public_ipv6_route' "$release/scripts/webserver-image-deploy"
 if grep -RqE --exclude-dir=tests --exclude='*.example.*' --exclude=validate-release \
     'ufw (allow|route|default)|ufw --force enable' "$release"; then
     printf 'Oracle releases must not add firewall rules through UFW.\n' >&2

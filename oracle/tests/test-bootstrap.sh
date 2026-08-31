@@ -76,6 +76,22 @@ grep -q 'macOS filesystem metadata' "$fixture_root/failure.log" ||
 rm "$fixture_root/release/lib/._common.sh"
 must_fail bash "$oracle_dir/scripts/validate-release" "$fixture_root/source" --static
 
+# shellcheck disable=SC2329
+ip() {
+    printf '%s\n' \
+        '2606:4700:4700::1111 via fe80::1 dev enp0s6 src 2603:c020:c011:2500:6358:: metric 100'
+}
+require_public_ipv6_route
+# shellcheck disable=SC2329
+ip() {
+    printf '%s\n' \
+        '2606:4700:4700::1111 via fe80::1 dev enp0s6 src fd7a:115c:a1e0::1 metric 100'
+}
+must_fail require_public_ipv6_route
+grep -q 'no global unicast source address' "$fixture_root/failure.log" ||
+    fail 'a Tailscale-only IPv6 source was accepted as public IPv6'
+unset -f ip
+
 printf 'tskey-auth-fake-test-value\n' >"$fixture_root/key"
 tailscale() {
     printf '%s\n' "$*" >>"$fixture_root/tailscale-calls"
@@ -190,15 +206,27 @@ ip6tables() {
 
 reconcile_webserver_firewall false
 printf '%s\n' "${firewall_calls[@]}" >"$fixture_root/firewall-transitional"
-expected_dns_rule='iptables --wait 10 --append WEBSERVER_INPUT --source 10.89.0.0/24'
-expected_dns_rule+=' --destination 10.89.0.1 --protocol udp --destination-port 53 --jump ACCEPT'
+expected_dns_rule='iptables --wait 10 --append WEBSERVER_INPUT --source 10.90.0.0/24'
+expected_dns_rule+=' --destination 10.90.0.1 --protocol udp --destination-port 53 --jump ACCEPT'
 expected_caddy_rule='iptables --wait 10 --append WEBSERVER_FORWARD'
-expected_caddy_rule+=' --destination 10.89.0.0/24 --protocol tcp --match multiport'
+expected_caddy_rule+=' --destination 10.90.0.0/24 --protocol tcp --match multiport'
 expected_caddy_rule+=' --destination-ports 80,443 --jump ACCEPT'
-expected_caddy_reply='iptables --wait 10 --append WEBSERVER_FORWARD --source 10.89.0.0/24'
+expected_caddy_reply='iptables --wait 10 --append WEBSERVER_FORWARD --source 10.90.0.0/24'
 expected_caddy_reply+=' --match conntrack --ctstate RELATED,ESTABLISHED --jump ACCEPT'
 expected_ssh_allow='iptables --wait 10 --append WEBSERVER_INPUT'
 expected_ssh_allow+=' --protocol tcp --destination-port 22 --jump ACCEPT'
+expected_ipv6_dns_rule='ip6tables --wait 10 --append WEBSERVER_INPUT'
+expected_ipv6_dns_rule+=' --source fd9d:7a3b:6f2c:1::/64'
+expected_ipv6_dns_rule+=' --destination fd9d:7a3b:6f2c:1::1'
+expected_ipv6_dns_rule+=' --protocol udp --destination-port 53 --jump ACCEPT'
+expected_dhcpv6_rule='ip6tables --wait 10 --append WEBSERVER_INPUT --source fe80::/10'
+expected_dhcpv6_rule+=' --protocol udp --source-port 547 --destination-port 546 --jump ACCEPT'
+expected_ipv6_caddy_rule='ip6tables --wait 10 --append WEBSERVER_FORWARD'
+expected_ipv6_caddy_rule+=' --destination fd9d:7a3b:6f2c:1::/64 --protocol tcp'
+expected_ipv6_caddy_rule+=' --match multiport --destination-ports 80,443 --jump ACCEPT'
+expected_ipv6_reply='ip6tables --wait 10 --append WEBSERVER_FORWARD'
+expected_ipv6_reply+=' --source fd9d:7a3b:6f2c:1::/64 --match conntrack'
+expected_ipv6_reply+=' --ctstate RELATED,ESTABLISHED --jump ACCEPT'
 grep -Fq \
     'iptables --wait 10 --insert INPUT 1 --jump WEBSERVER_INPUT' \
     "$fixture_root/firewall-transitional" || fail 'managed INPUT chain was not inserted first'
@@ -212,6 +240,20 @@ grep -Fq "$expected_caddy_reply" \
     "$fixture_root/firewall-transitional" || fail 'published Caddy replies were not allowed'
 grep -Fq 'iptables --wait 10 --policy INPUT DROP' "$fixture_root/firewall-transitional" ||
     fail 'IPv4 INPUT policy was not set to DROP'
+grep -Fq \
+    'ip6tables --wait 10 --insert FORWARD 1 --jump WEBSERVER_FORWARD' \
+    "$fixture_root/firewall-transitional" ||
+    fail 'managed IPv6 FORWARD chain was not inserted first'
+grep -Fq "$expected_dhcpv6_rule" \
+    "$fixture_root/firewall-transitional" || fail 'DHCPv6 replies were not allowed'
+grep -Fq "$expected_ipv6_dns_rule" \
+    "$fixture_root/firewall-transitional" || fail 'IPv6 Aardvark UDP DNS was not allowed'
+grep -Fq "$expected_ipv6_caddy_rule" \
+    "$fixture_root/firewall-transitional" || fail 'published Caddy IPv6 TCP ports were not allowed'
+grep -Fq "$expected_ipv6_reply" \
+    "$fixture_root/firewall-transitional" || fail 'published Caddy IPv6 replies were not allowed'
+grep -Fq 'ip6tables --wait 10 --policy FORWARD DROP' "$fixture_root/firewall-transitional" ||
+    fail 'IPv6 FORWARD policy was not set to DROP'
 
 firewall_calls=()
 reconcile_webserver_firewall true

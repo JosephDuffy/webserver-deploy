@@ -13,7 +13,8 @@ source "$bootstrap_dir/lib/bootstrap-support.sh"
 
 require_root
 [[ $# -ge 1 && $# -le 5 ]] ||
-    die "usage: bootstrap.sh <commit> [tailscale-auth-key-file] [environment-file] [github-token-file] [swift-environment-file]"
+    die "usage: bootstrap.sh <commit> [tailscale-auth-key-file] [environment-file]" \
+        "[github-token-file] [swift-environment-file]"
 validate_commit "$1" || die "invalid webserver-deploy commit"
 readonly commit=$1
 readonly tailscale_auth_key_file=${2:-"$bootstrap_dir/tailscale-auth-key"}
@@ -35,6 +36,7 @@ install_missing_packages() {
         curl
         gnupg
         gzip
+        iproute2
         jq
         netavark
         openssh-server
@@ -107,6 +109,7 @@ install_github_cli
 install_tailscale
 
 require_runtime_capabilities
+require_public_ipv6_route
 
 systemctl enable --now tailscaled.service unattended-upgrades.service
 
@@ -153,12 +156,18 @@ if command -v ufw >/dev/null 2>&1 && ufw status | grep -q '^Status: active$'; th
     log "disabling UFW; Oracle platform-image rules are retained and the managed firewall takes over"
     ufw --force disable
 fi
-systemctl start webserver-network.service
-podman network inspect webserver | jq --exit-status \
-    --arg subnet "$WEBSERVER_NETWORK_SUBNET" \
-    --arg gateway "$WEBSERVER_NETWORK_GATEWAY" \
-    '.[0].subnets | any(.subnet == $subnet and .gateway == $gateway)' >/dev/null ||
-    die "the existing webserver Podman network has unexpected addressing; bootstrap update required"
+systemctl start "$WEBSERVER_NETWORK_SERVICE"
+podman network inspect "$WEBSERVER_NETWORK_NAME" | jq --exit-status \
+    --arg ipv4_subnet "$WEBSERVER_NETWORK_SUBNET" \
+    --arg ipv4_gateway "$WEBSERVER_NETWORK_GATEWAY" \
+    --arg ipv6_subnet "$WEBSERVER_NETWORK_IPV6_SUBNET" \
+    --arg ipv6_gateway "$WEBSERVER_NETWORK_IPV6_GATEWAY" \
+    '.[0] as $network |
+        $network.ipv6_enabled == true and
+        ($network.subnets | any(.subnet == $ipv4_subnet and .gateway == $ipv4_gateway)) and
+        ($network.subnets | any(.subnet == $ipv6_subnet and .gateway == $ipv6_gateway))' \
+    >/dev/null ||
+    die "the webserver Podman network has unexpected addressing; bootstrap update required"
 
 if [[ -f $STATE_DIR/ssh-locked-down ]]; then
     sshd_configuration="$target/host/sshd_config.locked-down"

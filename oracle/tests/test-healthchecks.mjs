@@ -45,13 +45,36 @@ const swift = readFileSync(
     'utf8',
 );
 const configuration = readFileSync(new URL('../Caddyfile', import.meta.url), 'utf8');
-const network = readFileSync(new URL('../quadlet/webserver.network', import.meta.url), 'utf8');
+const network = readFileSync(
+    new URL('../quadlet/webserver-dual-stack.network', import.meta.url),
+    'utf8',
+);
+const legacyNetwork = readFileSync(
+    new URL('../quadlet/webserver.network', import.meta.url),
+    'utf8',
+);
 assert.match(caddy, /^HealthCmd=\/usr\/bin\/curl --silent --output \/dev\/null --show-error --fail --max-time 5 http:\/\/localhost:2019\/config\/$/m);
 assert.match(configuration, /^\s*admin localhost:2019$/m);
 assert.doesNotMatch(caddy, /^PublishPort=.*2019/m);
+for (const publishedPort of [
+    '0.0.0.0:80:80/tcp',
+    '[::]:80:80/tcp',
+    '0.0.0.0:443:443/tcp',
+    '[::]:443:443/tcp',
+    '0.0.0.0:443:443/udp',
+    '[::]:443:443/udp',
+]) {
+    assert.ok(
+        caddy.split('\n').includes(`PublishPort=${publishedPort}`),
+        `Missing Caddy published port ${publishedPort}`,
+    );
+}
 assert.match(website, /^EnvironmentFile=\/etc\/webserver\/josephduffy-co-uk\.env$/m);
 assert.match(website, /^GlobalArgs=--runtime=runc$/m);
 assert.match(caddy, /^GlobalArgs=--runtime=runc$/m);
+assert.match(website, /^Network=webserver-dual-stack\.network$/m);
+assert.match(swift, /^Network=webserver-dual-stack\.network$/m);
+assert.match(caddy, /^Network=webserver-dual-stack\.network$/m);
 assert.doesNotMatch(website, /^Sysctl=net\.ipv4\.ip_unprivileged_port_start=/m);
 assert.doesNotMatch(caddy, /^Sysctl=net\.ipv4\.ip_unprivileged_port_start=/m);
 assert.match(caddy, /^AddCapability=NET_BIND_SERVICE$/m);
@@ -74,6 +97,12 @@ assert.match(
 assert.doesNotMatch(caddy, /Requires=.*josephduffy-co-uk/);
 assert.match(configuration, /^swift\.josephduffy\.co\.uk \{$/m);
 assert.match(configuration, /^\s*reverse_proxy josephduffy-co-uk-swift:8080$/m);
-assert.match(network, /^Subnet=10\.89\.0\.0\/24$/m);
-assert.match(network, /^Gateway=10\.89\.0\.1$/m);
+assert.match(network, /^Subnet=10\.90\.0\.0\/24$/m);
+assert.match(network, /^Gateway=10\.90\.0\.1$/m);
+assert.match(network, /^NetworkName=webserver-dual-stack$/m);
+assert.match(network, /^IPv6=true$/m);
+assert.match(network, /^Subnet=fd9d:7a3b:6f2c:1::\/64$/m);
+assert.match(network, /^Gateway=fd9d:7a3b:6f2c:1::1$/m);
+assert.match(legacyNetwork, /^Subnet=10\.89\.0\.0\/24$/m);
+assert.doesNotMatch(legacyNetwork, /^Subnet=10\.90\.0\.0\/24$/m);
 console.log('Website health-command and Caddy liveness configuration tests passed.');

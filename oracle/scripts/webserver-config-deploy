@@ -11,6 +11,7 @@ readonly commit=$1
 
 require_supported_host
 require_runtime_capabilities
+require_public_ipv6_route
 
 mkdir -p "$STATE_DIR" "$RELEASE_ROOT"
 exec 9>"$STATE_DIR/deploy.lock"
@@ -133,7 +134,13 @@ if [[ -n $previous && -d $previous ]]; then
         cmp -s "$previous/quadlet/$DEPLOY_QUADLET" "$target/quadlet/$DEPLOY_QUADLET" ||
             target_changed["$deployment_target_name"]=true
     done
-    if ! cmp -s "$previous/quadlet/webserver.network" "$target/quadlet/webserver.network"; then
+    network_changed=false
+    for network_quadlet in webserver.network webserver-dual-stack.network; do
+        cmp -s \
+            "$previous/quadlet/$network_quadlet" \
+            "$target/quadlet/$network_quadlet" || network_changed=true
+    done
+    if [[ $network_changed == true ]]; then
         for deployment_target_name in "${enabled_targets[@]}"; do
             target_changed["$deployment_target_name"]=true
         done
@@ -147,9 +154,14 @@ fi
 
 activate_release() {
     local release=$1
+    local network_service=webserver-network.service
+    if [[ -f $release/quadlet/webserver-dual-stack.network ]]; then
+        network_service=webserver-dual-stack-network.service
+    fi
     atomic_symlink "$release" "$CURRENT_RELEASE"
     install_managed_files "$release"
     systemctl daemon-reload
+    systemctl start "$network_service"
     systemctl restart "$FIREWALL_SERVICE"
 }
 

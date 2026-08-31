@@ -1,5 +1,5 @@
 [Unit]
-Description=Private webserver container network
+Description=Legacy IPv4-only webserver container network retained for rollback
 
 [Network]
 Driver=bridge

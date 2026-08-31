@@ -1,15 +1,15 @@
 [Unit]
 Description=josephduffy.co.uk trial website
-After=network-online.target webserver-network.service webserver-firewall.service
+After=network-online.target webserver-dual-stack-network.service webserver-firewall.service
 Wants=network-online.target
-Requires=webserver-network.service webserver-firewall.service
+Requires=webserver-dual-stack-network.service webserver-firewall.service
 
 [Container]
 GlobalArgs=--runtime=runc
 Image=localhost/josephduffy-co-uk:production
 Pull=never
 ContainerName=josephduffy-co-uk
-Network=webserver.network
+Network=webserver-dual-stack.network
 EnvironmentFile=/etc/webserver/josephduffy-co-uk.env
 ReadOnly=true
 ReadOnlyTmpfs=true

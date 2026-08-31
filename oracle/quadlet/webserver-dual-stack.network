@@ -1,0 +1,12 @@
+[Unit]
+Description=Private dual-stack webserver container network
+
+[Network]
+Driver=bridge
+NetworkName=webserver-dual-stack
+IPv6=true
+Subnet=10.90.0.0/24
+Gateway=10.90.0.1
+Subnet=fd9d:7a3b:6f2c:1::/64
+Gateway=fd9d:7a3b:6f2c:1::1
+Label=io.containers.autoupdate=disabled

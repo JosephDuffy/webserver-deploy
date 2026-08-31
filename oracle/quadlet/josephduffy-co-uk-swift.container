@@ -1,8 +1,8 @@
 [Unit]
 Description=josephduffy.co.uk Swift server
-After=network-online.target webserver-network.service webserver-firewall.service
+After=network-online.target webserver-dual-stack-network.service webserver-firewall.service
 Wants=network-online.target
-Requires=webserver-network.service webserver-firewall.service
+Requires=webserver-dual-stack-network.service webserver-firewall.service
 ConditionPathExists=/var/lib/webserver-deploy/images/josephduffy-co-uk-swift/enabled
 
 [Container]
@@ -10,7 +10,7 @@ GlobalArgs=--runtime=runc
 Image=localhost/josephduffy-co-uk-swift:production
 Pull=never
 ContainerName=josephduffy-co-uk-swift
-Network=webserver.network
+Network=webserver-dual-stack.network
 EnvironmentFile=/etc/webserver/josephduffy-co-uk-swift.env
 ReadOnly=true
 ReadOnlyTmpfs=true

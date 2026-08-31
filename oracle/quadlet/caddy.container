@@ -1,21 +1,24 @@
 [Unit]
 Description=Caddy public reverse proxy
-After=network-online.target webserver-network.service webserver-firewall.service
+After=network-online.target webserver-dual-stack-network.service webserver-firewall.service
 Wants=network-online.target
-Requires=webserver-network.service webserver-firewall.service
+Requires=webserver-dual-stack-network.service webserver-firewall.service
 
 [Container]
 GlobalArgs=--runtime=runc
 Image=docker.io/library/caddy:2.11.4-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648
 Pull=never
 ContainerName=caddy
-Network=webserver.network
+Network=webserver-dual-stack.network
 Volume=/opt/webserver/current/Caddyfile:/etc/caddy/Caddyfile:ro,Z
 Volume=caddy-data.volume:/data
 Volume=caddy-config.volume:/config
-PublishPort=80:80/tcp
-PublishPort=443:443/tcp
-PublishPort=443:443/udp
+PublishPort=0.0.0.0:80:80/tcp
+PublishPort=[::]:80:80/tcp
+PublishPort=0.0.0.0:443:443/tcp
+PublishPort=[::]:443:443/tcp
+PublishPort=0.0.0.0:443:443/udp
+PublishPort=[::]:443:443/udp
 ReadOnly=true
 ReadOnlyTmpfs=true
 NoNewPrivileges=true

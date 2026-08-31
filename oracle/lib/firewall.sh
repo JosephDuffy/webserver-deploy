@@ -84,8 +84,19 @@ reconcile_webserver_firewall() {
     ip6tables --wait 10 --append WEBSERVER_INPUT \
         --protocol ipv6-icmp --jump ACCEPT
     ip6tables --wait 10 --append WEBSERVER_INPUT \
+        --source fe80::/10 --protocol udp --source-port 547 \
+        --destination-port 546 --jump ACCEPT
+    ip6tables --wait 10 --append WEBSERVER_INPUT \
         --in-interface tailscale0 --protocol tcp \
         --match multiport --destination-ports 22,2222 --jump ACCEPT
+    ip6tables --wait 10 --append WEBSERVER_INPUT \
+        --source "$WEBSERVER_NETWORK_IPV6_SUBNET" \
+        --destination "$WEBSERVER_NETWORK_IPV6_GATEWAY" \
+        --protocol udp --destination-port 53 --jump ACCEPT
+    ip6tables --wait 10 --append WEBSERVER_INPUT \
+        --source "$WEBSERVER_NETWORK_IPV6_SUBNET" \
+        --destination "$WEBSERVER_NETWORK_IPV6_GATEWAY" \
+        --protocol tcp --destination-port 53 --jump ACCEPT
     if [[ $ssh_locked_down == true ]]; then
         ip6tables --wait 10 --append WEBSERVER_INPUT \
             ! --in-interface tailscale0 --protocol tcp --destination-port 22 --jump DROP
@@ -94,6 +105,39 @@ reconcile_webserver_firewall() {
             --protocol tcp --destination-port 22 --jump ACCEPT
     fi
     ip6tables --wait 10 --append WEBSERVER_INPUT --jump RETURN
+
+    reset_firewall_chain ip6tables WEBSERVER_FORWARD FORWARD
+    ip6tables --wait 10 --append WEBSERVER_FORWARD \
+        --source "$WEBSERVER_NETWORK_IPV6_SUBNET" \
+        --destination "$WEBSERVER_NETWORK_IPV6_SUBNET" --jump ACCEPT
+    ip6tables --wait 10 --append WEBSERVER_FORWARD \
+        --destination "$WEBSERVER_NETWORK_IPV6_SUBNET" --match conntrack \
+        --ctstate RELATED,ESTABLISHED --jump ACCEPT
+    ip6tables --wait 10 --append WEBSERVER_FORWARD \
+        --source "$WEBSERVER_NETWORK_IPV6_SUBNET" --match conntrack \
+        --ctstate RELATED,ESTABLISHED --jump ACCEPT
+    ip6tables --wait 10 --append WEBSERVER_FORWARD \
+        --destination "$WEBSERVER_NETWORK_IPV6_SUBNET" \
+        --protocol ipv6-icmp --jump ACCEPT
+    ip6tables --wait 10 --append WEBSERVER_FORWARD \
+        --source "$WEBSERVER_NETWORK_IPV6_SUBNET" \
+        --protocol ipv6-icmp --jump ACCEPT
+    ip6tables --wait 10 --append WEBSERVER_FORWARD \
+        --destination "$WEBSERVER_NETWORK_IPV6_SUBNET" --protocol tcp \
+        --match multiport --destination-ports 80,443 --jump ACCEPT
+    ip6tables --wait 10 --append WEBSERVER_FORWARD \
+        --destination "$WEBSERVER_NETWORK_IPV6_SUBNET" --protocol udp \
+        --destination-port 443 --jump ACCEPT
+    ip6tables --wait 10 --append WEBSERVER_FORWARD \
+        --source "$WEBSERVER_NETWORK_IPV6_SUBNET" --protocol tcp \
+        --match multiport --destination-ports 80,443 --jump ACCEPT
+    ip6tables --wait 10 --append WEBSERVER_FORWARD \
+        --source "$WEBSERVER_NETWORK_IPV6_SUBNET" --jump REJECT \
+        --reject-with icmp6-port-unreachable
+    ip6tables --wait 10 --append WEBSERVER_FORWARD \
+        --destination "$WEBSERVER_NETWORK_IPV6_SUBNET" --jump REJECT \
+        --reject-with icmp6-port-unreachable
+    ip6tables --wait 10 --append WEBSERVER_FORWARD --jump RETURN
 
     iptables --wait 10 --policy INPUT DROP
     iptables --wait 10 --policy FORWARD DROP

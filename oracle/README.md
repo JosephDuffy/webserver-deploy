@@ -27,6 +27,36 @@ In the security list or NSG attached to the instance's VNIC, create separate sta
 from `0.0.0.0/0` for destinations TCP/80, TCP/443, and UDP/443. Leave the source port as All; it is
 the client's ephemeral port.
 
+Assign one reserved global IPv6 address to the instance's VNIC, rather than assigning an IPv6
+prefix. The subnet route table must send `::/0` to the Internet Gateway. In the same security list
+or NSG, allow stateful ingress from `::/0` to TCP/80, TCP/443, and UDP/443, allow ICMPv6, and allow
+egress to `::/0`. These rules are administered independently from the host firewall in this bundle.
+
+Enable DHCPv6 and router advertisements for the primary interface before bootstrapping. Netplan
+keeps Oracle's assigned `/128` on the host; the repository does not hard-code the public address:
+
+```bash
+interface=$(ip -4 route show default | awk 'NR == 1 { print $5 }')
+sudo netplan set "ethernets.${interface}.dhcp6=true"
+sudo netplan set "ethernets.${interface}.accept-ra=true"
+sudo netplan try --timeout 120
+sudo reboot
+```
+
+After reconnecting, confirm that the interface has a global address, the default route selects it,
+and native IPv6 egress works:
+
+```bash
+interface=$(ip -4 route show default | awk 'NR == 1 { print $5 }')
+ip -brief -6 address show dev "$interface"
+ip -6 route get 2606:4700:4700::1111
+curl --noproxy '*' -6 --fail --show-error https://api64.ipify.org
+```
+
+Bootstrap and routine deployments deliberately stop if the selected IPv6 route has only a
+Tailscale address. Add DNS AAAA records only after the dual-stack configuration deployment succeeds
+and both address families have been tested externally.
+
 Configure a local SSH alias (for example, `bootstrap-server`) with your administrator account,
 personal key, host and port. Verify its host key and normal SSH access first. Remote bootstrap
 requires non-interactive `sudo` on the server, but **does not require local root**. It keeps strict
@@ -151,6 +181,13 @@ Bootstrap disables UFW if it was previously enabled because [Oracle warns that U
 with the essential rules included in its Ubuntu platform images][oracle-platform-images].
 Next.js generated pages use a bounded writable tmpfs; the application image and other paths remain
 read-only.
+
+The active Podman network is dual-stack. Containers receive addresses from `10.90.0.0/24` and a
+repository-owned IPv6 ULA prefix; Netavark translates the IPv6 address through the host's assigned
+global address. Caddy publishes TCP/80, TCP/443, and UDP/443 explicitly on both host address
+families. The legacy IPv4-only `webserver` network retains `10.89.0.0/24` during this migration so
+a failed configuration deployment can restore the previous release without recreating network
+state or conflicting with the new bridge.
 
 Bootstrap fails before package installation if an environment file is not on the device performing
 the bootstrap or on the web server at `/etc/webserver/josephduffy-co-uk.env`. The example is never
@@ -357,12 +394,21 @@ Useful checks:
 ```bash
 sudo systemctl status josephduffy-co-uk.service caddy.service
 sudo systemctl status josephduffy-co-uk-swift.service
+sudo systemctl status webserver-dual-stack-network.service webserver-firewall.service
+sudo podman network inspect webserver-dual-stack | jq '.[0] | {ipv6_enabled, subnets}'
+sudo podman port caddy
 sudo podman image inspect --format '{{.Os}}/{{.Architecture}}' localhost/josephduffy-co-uk:production
 sudo podman image inspect --format '{{.Os}}/{{.Architecture}}' localhost/josephduffy-co-uk-swift:production
 sudo podman image inspect --format '{{.Os}}/{{.Architecture}}' docker.io/library/caddy:2.11.4-alpine
 sudo tail -n 50 /var/lib/webserver-deploy/history.log
-curl --head --fail https://oracle.josephduffy.co.uk/
-curl --head --fail https://swift.josephduffy.co.uk/
+curl -4 --head --fail https://oracle.josephduffy.co.uk/
+curl -6 --head --fail https://oracle.josephduffy.co.uk/
+curl -4 --head --fail https://swift.josephduffy.co.uk/
+curl -6 --head --fail https://swift.josephduffy.co.uk/
 ```
+
+Keep the legacy `webserver` network while the previous configuration release is a useful rollback
+target. It consumes no public address and can remain unused. Remove its Quadlet and network in a
+later configuration release after dual-stack operation and rollback have both been exercised.
 
 [oracle-platform-images]: https://docs.oracle.com/iaas/Content/Compute/References/images.htm
