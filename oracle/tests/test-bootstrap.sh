@@ -83,6 +83,7 @@ ip() {
 }
 require_public_ipv6_route
 # shellcheck disable=SC2329
+# shellcheck disable=SC2317
 ip() {
     printf '%s\n' \
         '2606:4700:4700::1111 via fe80::1 dev enp0s6 src fd7a:115c:a1e0::1 metric 100'
