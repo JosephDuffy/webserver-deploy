@@ -48,7 +48,7 @@ load_deployment_target() {
         josephduffy-co-uk-swift)
             DEPLOY_TARGET='josephduffy-co-uk-swift'
             DEPLOY_REPOSITORY='JosephDuffy/josephduffy.co.uk'
-            DEPLOY_IMAGE='ghcr.io/josephduffy/josephduffy-co-uk-swift'
+            DEPLOY_IMAGE='ghcr.io/josephduffy/josephduffy.co.uk-swift'
             DEPLOY_SEED_DIGEST=''
             DEPLOY_LOCAL_IMAGE='localhost/josephduffy-co-uk-swift:production'
             DEPLOY_CONTAINER='josephduffy-co-uk-swift'

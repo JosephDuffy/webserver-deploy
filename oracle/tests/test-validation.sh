@@ -62,7 +62,7 @@ load_deployment_target josephduffy-co-uk
 [[ $DEPLOY_STATE_DIR == /var/lib/webserver-deploy/images/josephduffy-co-uk ]] ||
     fail 'primary deployment target selected the wrong state directory'
 load_deployment_target josephduffy-co-uk-swift
-[[ $DEPLOY_IMAGE == ghcr.io/josephduffy/josephduffy-co-uk-swift ]] ||
+[[ $DEPLOY_IMAGE == ghcr.io/josephduffy/josephduffy.co.uk-swift ]] ||
     fail 'Swift deployment target selected the wrong image'
 [[ $DEPLOY_STATE_DIR == /var/lib/webserver-deploy/images/josephduffy-co-uk-swift ]] ||
     fail 'Swift deployment target selected the wrong state directory'

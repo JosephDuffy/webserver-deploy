@@ -236,7 +236,7 @@ The available targets are:
 | Target | Attested OCI image | Public hostname |
 | --- | --- | --- |
 | `josephduffy-co-uk` | `ghcr.io/josephduffy/josephduffy.co.uk` | `oracle.josephduffy.co.uk` |
-| `josephduffy-co-uk-swift` | `ghcr.io/josephduffy/josephduffy-co-uk-swift` | `swift.josephduffy.co.uk` |
+| `josephduffy-co-uk-swift` | `ghcr.io/josephduffy/josephduffy.co.uk-swift` | `swift.josephduffy.co.uk` |
 
 In the website repository, expose the digest from the existing build job. The build step must have
 an `id`; this example assumes it is named `build`:
