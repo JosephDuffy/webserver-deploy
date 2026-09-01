@@ -38,7 +38,7 @@ jobs:
         run: |
           test "$CALLER_REPOSITORY" = JosephDuffy/josephduffy.co.uk
           case "$TARGET" in
-            josephduffy-co-uk|josephduffy-co-uk-swift) ;;
+            josephduffy-co-uk|josephduffy.co.uk-swift) ;;
             *) exit 1 ;;
           esac
 
@@ -53,8 +53,8 @@ jobs:
             josephduffy-co-uk)
               image=ghcr.io/josephduffy/josephduffy.co.uk
               ;;
-            josephduffy-co-uk-swift)
-              image=ghcr.io/josephduffy/josephduffy-co-uk-swift
+            josephduffy.co.uk-swift)
+              image=ghcr.io/josephduffy/josephduffy.co.uk-swift
               ;;
             *)
               exit 1
@@ -79,7 +79,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           case "$TARGET" in
-            josephduffy-co-uk|josephduffy-co-uk-swift) ;;
+            josephduffy-co-uk|josephduffy.co.uk-swift) ;;
             *) exit 1 ;;
           esac
           [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
